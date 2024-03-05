@@ -1,18 +1,73 @@
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+<!--End of Wrap -->
+<div class="wrap">
+    <h1>Pure <span>CSS</span> Modal Popup</h1>
+
+</div>
+<!--End of Wrap -->
+
+
+<!--Start of Modal -->
+<div class="modal">
+    <input id="modal__trigger" type="checkbox" />
+    <label for="modal__trigger">Launch Modal</label>
+    <div class="modal__overlay" role="dialog" aria-labelledby="modal__title" aria-describedby="modal_desc">
+        <div class="modal__wrap">
+            <label for="modal__trigger">&#10006;</label>
+            <h2 id="modal__title">This is your modal content</h2>
+            <p id="modal__desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac laoreet elit. Phasellus dignissim purus vitae urna cursus, quis congue ligula tristique. Ut nec blandit risus. Donec at orci ut justo venenatis viverra. Suspendisse in volutpat lacus. In enim est, dapibus eget ipsum sed, suscipit ultrices diam.</p>
+        </div>
+    </div>
+</div>
+<!--End of Modal -->
+
+@import url(https://fonts.googleapis.com/css?family=Lato:300,400,900);
+@import url(https://fonts.googleapis.com/css?family=Audiowide);
+
+$lato: 'Lato', sans-serif;
+
+//color
+$yellow: #FFD300; 
+$white: #f2f1f1;
+$black: #000000;
+$black-light: #5E5E5E;
+
+//font weights:
+$thin: 300;
+$normal: 400;
+$bold: 900;
+
+
+/*==================================== 
+  Some styles to spruce up the demo
+=====================================*/ 
+
+body {
+  background: $white;
+  color: $black-light; 
+  font-family: $lato;
+  font-weight: $thin;
+  text-shadow: 1px 1px 1px #fff;
+  text-align: center;
 }
 
-.content {
-  background: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+h1 { 
+    font-size: 1.5em;
+    font-size: 7vw;
+    line-height: 1.2; 
+    margin: 0;
+    
+    @media (min-width: 500px) {
+        font-size: 2.25em;
+        font-size: 7vw;
+    }
+  
+    @media (min-width: 1000px) {
+        font-size: 4.5em;
+    }
 }
+
+h2 {
+    font-size: 1em;
+    line-height: 1.2;
+    margin: 1.414em 0 0.5em;
+
