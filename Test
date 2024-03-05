@@ -1,16 +1,39 @@
-const slider = document.getElementById('card-slider');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
 
-// Assume each card has a fixed width, for example, 300px.
-const cardWidth = 300; // Change this to your actual card width
+/* style.css */
+.hidden {
+    display: none;
+}
 
-prevBtn.addEventListener('click', () => {
-    // Scroll left by one card width
-    slider.scrollLeft -= cardWidth;
+#overlay {
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(255, 255, 255); /* Fallback color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#overlayContent {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    text-align: center;
+}
+
+// script.js
+document.getElementById("openOverlayBtn").addEventListener("click", function() {
+    document.getElementById("overlay").classList.remove("hidden");
 });
 
-nextBtn.addEventListener('click', () => {
-    // Scroll right by one card width
-    slider.scrollLeft += cardWidth;
+document.getElementById("closeOverlayBtn").addEventListener("click", function() {
+    document.getElementById("overlay").classList.add("hidden");
 });
+
+
