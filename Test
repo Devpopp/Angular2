@@ -1,52 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Card Navigation</title>
-  <style>
-    .card {
-      display: none;
-      /* Add your card styles here */
-    }
-    .card.active {
-      display: block;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Navigation</title>
+    <style>
+        .card {
+            display: none; /* Hide all cards initially */
+            /* Add your card styles here */
+        }
+        .card.active {
+            display: block; /* Show only active card */
+        }
+        /* Simple styling for the buttons */
+        #prevBtn, #nextBtn {
+            cursor: pointer;
+            padding: 10px;
+            margin: 5px;
+            background-color: #333;
+            color: white;
+            border: none;
+        }
+    </style>
 </head>
 <body>
 
 <div id="cards-container">
-  <div class="card active">Card 1 content here</div>
-  <div class="card">Card 2 content here</div>
-  <div class="card">Card 3 content here</div>
+    <div class="card active">Card 1 content here</div>
+    <div class="card">Card 2 content here</div>
+    <div class="card">Card 3 content here</div>
 </div>
 
 <button id="prevBtn">Previous</button>
 <button id="nextBtn">Next</button>
 
 <script>
-  document.addEventListener('DOMContentLoaded', (event) => {
-    let currentIndex = 0;
-    const cards = document.querySelectorAll('.card');
-    const totalCards = cards.length;
-    
-    function updateCards(index) {
-      cards.forEach(card => card.classList.remove('active'));
-      cards[index].classList.add('active');
+    // Define a function to show a card at a given index
+    function showCard(index) {
+        // Get all card elements
+        var cards = document.querySelectorAll('.card');
+        // Hide all cards
+        cards.forEach(function(card) {
+            card.classList.remove('active');
+        });
+        // Show the targeted card
+        cards[index].classList.add('active');
     }
 
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      currentIndex = (currentIndex > 0) ? currentIndex - 1 : totalCards - 1;
-      updateCards(currentIndex);
+    // Initial index of the shown card
+    var currentCard = 0;
+
+    // Set up the previous button
+    document.getElementById('prevBtn').addEventListener('click', function() {
+        currentCard = currentCard > 0 ? currentCard - 1 : cards.length - 1;
+        showCard(currentCard);
     });
 
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      currentIndex = (currentIndex + 1) % totalCards;
-      updateCards(currentIndex);
+    // Set up the next button
+    document.getElementById('nextBtn').addEventListener('click', function() {
+        currentCard = (currentCard + 1) % cards.length;
+        showCard(currentCard);
     });
 
-    updateCards(currentIndex); // Initialize the view
-  });
+    // Get all the cards
+    var cards = document.querySelectorAll('.card');
+    // Initially show the first card
+    showCard(0);
 </script>
 
 </body>
