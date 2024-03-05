@@ -2,70 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Card Navigation</title>
+    <title>Card Slider</title>
     <style>
+        #cards-container {
+            overflow: hidden;
+            white-space: nowrap;
+            width: 100%; /* Adjust the width as necessary */
+            transition: transform 0.3s ease-in-out;
+        }
         .card {
-            display: none; /* Hide all cards initially */
-            /* Add your card styles here */
+            display: inline-block;
+            width: 100%; /* Each card takes full width of the container */
+            /* Other styles for your card */
         }
-        .card.active {
-            display: block; /* Show only active card */
-        }
-        /* Simple styling for the buttons */
-        #prevBtn, #nextBtn {
+        /* Style for the buttons */
+        .nav-btn {
             cursor: pointer;
-            padding: 10px;
-            margin: 5px;
-            background-color: #333;
-            color: white;
-            border: none;
+            /* Add button styling */
         }
     </style>
 </head>
 <body>
 
 <div id="cards-container">
-    <div class="card active">Card 1 content here</div>
-    <div class="card">Card 2 content here</div>
-    <div class="card">Card 3 content here</div>
+    <div class="card">Card 1: Hello World!</div>
+    <div class="card">Card 2: Nice to meet you.</div>
+    <div class="card">Card 3: Have a nice day!</div>
 </div>
 
-<button id="prevBtn">Previous</button>
-<button id="nextBtn">Next</button>
+<button class="nav-btn" id="prevBtn">Previous</button>
+<button class="nav-btn" id="nextBtn">Next</button>
 
 <script>
-    // Define a function to show a card at a given index
-    function showCard(index) {
-        // Get all card elements
-        var cards = document.querySelectorAll('.card');
-        // Hide all cards
-        cards.forEach(function(card) {
-            card.classList.remove('active');
-        });
-        // Show the targeted card
-        cards[index].classList.add('active');
+    let currentIndex = 0;
+    const cardsContainer = document.getElementById('cards-container');
+    const cards = document.querySelectorAll('.card');
+    const cardWidth = cards[0].offsetWidth; // Assuming all cards are the same width
+
+    function updateCardPosition() {
+        cardsContainer.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
     }
 
-    // Initial index of the shown card
-    var currentCard = 0;
-
-    // Set up the previous button
     document.getElementById('prevBtn').addEventListener('click', function() {
-        currentCard = currentCard > 0 ? currentCard - 1 : cards.length - 1;
-        showCard(currentCard);
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : 0;
+        updateCardPosition();
     });
 
-    // Set up the next button
     document.getElementById('nextBtn').addEventListener('click', function() {
-        currentCard = (currentCard + 1) % cards.length;
-        showCard(currentCard);
+        currentIndex = (currentIndex < cards.length - 1) ? currentIndex + 1 : cards.length - 1;
+        updateCardPosition();
     });
-
-    // Get all the cards
-    var cards = document.querySelectorAll('.card');
-    // Initially show the first card
-    showCard(0);
 </script>
 
 </body>
