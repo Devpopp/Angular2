@@ -2,23 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Card Slider</title>
+    <title>Card Carousel</title>
     <style>
         #cards-container {
             overflow: hidden;
             white-space: nowrap;
-            width: 100%; /* Adjust the width as necessary */
-            transition: transform 0.3s ease-in-out;
+            width: 300px; /* Set this to the width of your cards */
         }
         .card {
             display: inline-block;
-            width: 100%; /* Each card takes full width of the container */
-            /* Other styles for your card */
+            width: 300px; /* Set this to the width of your cards */
+            /* Add other card styles here */
         }
-        /* Style for the buttons */
-        .nav-btn {
-            cursor: pointer;
-            /* Add button styling */
+        #prevBtn, #nextBtn {
+            /* Style your buttons as needed */
         }
     </style>
 </head>
@@ -30,29 +27,24 @@
     <div class="card">Card 3: Have a nice day!</div>
 </div>
 
-<button class="nav-btn" id="prevBtn">Previous</button>
-<button class="nav-btn" id="nextBtn">Next</button>
+<button id="prevBtn">Previous</button>
+<button id="nextBtn">Next</button>
 
 <script>
-    let currentIndex = 0;
-    const cardsContainer = document.getElementById('cards-container');
-    const cards = document.querySelectorAll('.card');
-    const cardWidth = cards[0].offsetWidth; // Assuming all cards are the same width
-
-    function updateCardPosition() {
-        cardsContainer.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
-    }
+    var container = document.getElementById('cards-container');
+    var scrollAmount = 0;
 
     document.getElementById('prevBtn').addEventListener('click', function() {
-        currentIndex = (currentIndex > 0) ? currentIndex - 1 : 0;
-        updateCardPosition();
+        // Scroll to the left
+        container.scrollBy({left: -300, behavior: 'smooth'}); // 300 is the card width
     });
 
     document.getElementById('nextBtn').addEventListener('click', function() {
-        currentIndex = (currentIndex < cards.length - 1) ? currentIndex + 1 : cards.length - 1;
-        updateCardPosition();
+        // Scroll to the right
+        container.scrollBy({left: 300, behavior: 'smooth'}); // 300 is the card width
     });
 </script>
 
 </body>
 </html>
+
