@@ -1,49 +1,18 @@
-// script.js
-document.getElementById("openOverlayBtn").addEventListener("click", function() {
-    document.getElementById("overlay").classList.remove("hidden");
-});
-
-document.getElementById("closeOverlayBtn").addEventListener("click", function() {
-    document.getElementById("overlay").classList.add("hidden");
-});
-
-
-
-/* style.css */
-.hidden {
-    display: none;
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-#overlay {
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(255, 255, 255); /* Fallback color */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
-#overlayContent {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    text-align: center;
-}
-
-// script.js
-document.getElementById("openOverlayBtn").addEventListener("click", function() {
-    document.getElementById("overlay").classList.remove("hidden");
-});
-
-document.getElementById("closeOverlayBtn").addEventListener("click", function() {
-    document.getElementById("overlay").classList.add("hidden");
-});
-
-
