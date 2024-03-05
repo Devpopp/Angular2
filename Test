@@ -1,5 +1,31 @@
-<div style="position: absolute;top: 50%;left: 16px;font-size: 25px;z-index: 2;" (click)="slidePrev()">
-    <ion-icon name="arrow-back"></ion-icon>
+document.addEventListener('DOMContentLoaded', (event) => {
+  let currentIndex = 0;
+  const cards = document.querySelectorAll('.card');
+  const totalCards = cards.length;
+  
+  function updateCards(index) {
+    cards.forEach(card => card.classList.remove('active'));
+    cards[index].classList.add('active');
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex > 0) ? currentIndex - 1 : totalCards - 1;
+    updateCards(currentIndex);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % totalCards;
+    updateCards(currentIndex);
+  });
+
+  updateCards(currentIndex); // Initialize the view
+});
+
+
+
+
+
+
   </div>
   <div style="position: absolute;top: 50%;right: 16px;font-size: 25px;z-index: 2;" (click)="slideNext()">
     <ion-icon name="arrow-forward"></ion-icon>
