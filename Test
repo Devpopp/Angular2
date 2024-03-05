@@ -1,50 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Card Carousel</title>
-    <style>
-        #cards-container {
-            overflow: hidden;
-            white-space: nowrap;
-            width: 300px; /* Set this to the width of your cards */
-        }
-        .card {
-            display: inline-block;
-            width: 300px; /* Set this to the width of your cards */
-            /* Add other card styles here */
-        }
-        #prevBtn, #nextBtn {
-            /* Style your buttons as needed */
-        }
-    </style>
-</head>
-<body>
+const slider = document.getElementById('card-slider');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
 
-<div id="cards-container">
-    <div class="card">Card 1: Hello World!</div>
-    <div class="card">Card 2: Nice to meet you.</div>
-    <div class="card">Card 3: Have a nice day!</div>
-</div>
+// Assume each card has a fixed width, for example, 300px.
+const cardWidth = 300; // Change this to your actual card width
 
-<button id="prevBtn">Previous</button>
-<button id="nextBtn">Next</button>
+prevBtn.addEventListener('click', () => {
+    // Scroll left by one card width
+    slider.scrollLeft -= cardWidth;
+});
 
-<script>
-    var container = document.getElementById('cards-container');
-    var scrollAmount = 0;
-
-    document.getElementById('prevBtn').addEventListener('click', function() {
-        // Scroll to the left
-        container.scrollBy({left: -300, behavior: 'smooth'}); // 300 is the card width
-    });
-
-    document.getElementById('nextBtn').addEventListener('click', function() {
-        // Scroll to the right
-        container.scrollBy({left: 300, behavior: 'smooth'}); // 300 is the card width
-    });
-</script>
-
-</body>
-</html>
-
+nextBtn.addEventListener('click', () => {
+    // Scroll right by one card width
+    slider.scrollLeft += cardWidth;
+});
