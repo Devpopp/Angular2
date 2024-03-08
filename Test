@@ -1,73 +1,23 @@
-<!--End of Wrap -->
-<div class="wrap">
-    <h1>Pure <span>CSS</span> Modal Popup</h1>
+import pandas as pd
 
-</div>
-<!--End of Wrap -->
+# Load the first Excel sheet that contains 'Unique_Global_Lead' and 'Application_Product_Name'
+lead_data = pd.read_excel('path_to_lead_data_excel.xlsx', sheet_name='SheetName')
 
+# Load the MasterSheet that contains 'ServiceName' and 'CI_Count'
+master_data = pd.read_excel('path_to_mastersheet_excel.xlsx', sheet_name='SheetName')
 
-<!--Start of Modal -->
-<div class="modal">
-    <input id="modal__trigger" type="checkbox" />
-    <label for="modal__trigger">Launch Modal</label>
-    <div class="modal__overlay" role="dialog" aria-labelledby="modal__title" aria-describedby="modal_desc">
-        <div class="modal__wrap">
-            <label for="modal__trigger">&#10006;</label>
-            <h2 id="modal__title">This is your modal content</h2>
-            <p id="modal__desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac laoreet elit. Phasellus dignissim purus vitae urna cursus, quis congue ligula tristique. Ut nec blandit risus. Donec at orci ut justo venenatis viverra. Suspendisse in volutpat lacus. In enim est, dapibus eget ipsum sed, suscipit ultrices diam.</p>
-        </div>
-    </div>
-</div>
-<!--End of Modal -->
+# Ensure the columns are named consistently
+lead_data['Application_Product_Name'] = lead_data['Application_Product_Name'].str.strip()
+master_data['ServiceName'] = master_data['ServiceName'].str.strip()
 
-@import url(https://fonts.googleapis.com/css?family=Lato:300,400,900);
-@import url(https://fonts.googleapis.com/css?family=Audiowide);
+# Rename columns to make them consistent
+master_data.rename(columns={'ServiceName': 'Application_Product_Name'}, inplace=True)
 
-$lato: 'Lato', sans-serif;
+# Merge datasets on the common column
+merged_data = pd.merge(lead_data, master_data, on='Application_Product_Name', how='left')
 
-//color
-$yellow: #FFD300; 
-$white: #f2f1f1;
-$black: #000000;
-$black-light: #5E5E5E;
+# Group by 'Unique_Global_Lead' and calculate the total 'CI_Count'
+ci_count_by_lead = merged_data.groupby('Unique_Global_Lead')['CI_Count'].sum().reset_index()
 
-//font weights:
-$thin: 300;
-$normal: 400;
-$bold: 900;
-
-
-/*==================================== 
-  Some styles to spruce up the demo
-=====================================*/ 
-
-body {
-  background: $white;
-  color: $black-light; 
-  font-family: $lato;
-  font-weight: $thin;
-  text-shadow: 1px 1px 1px #fff;
-  text-align: center;
-}
-
-h1 { 
-    font-size: 1.5em;
-    font-size: 7vw;
-    line-height: 1.2; 
-    margin: 0;
-    
-    @media (min-width: 500px) {
-        font-size: 2.25em;
-        font-size: 7vw;
-    }
-  
-    @media (min-width: 1000px) {
-        font-size: 4.5em;
-    }
-}
-
-h2 {
-    font-size: 1em;
-    line-height: 1.2;
-    margin: 1.414em 0 0.5em;
-
+# Now ci_count_by_lead DataFrame will have the total CI_Count for each Unique_Global_Lead
+print(ci_count_by_lead)
