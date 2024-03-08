@@ -6,18 +6,21 @@ lead_data = pd.read_excel('path_to_lead_data_excel.xlsx', sheet_name='SheetName'
 # Load the MasterSheet that contains 'ServiceName' and 'CI_Count'
 master_data = pd.read_excel('path_to_mastersheet_excel.xlsx', sheet_name='SheetName')
 
-# Ensure the columns are named consistently
+# Ensure the columns are named consistently and formatted
 lead_data['Application_Product_Name'] = lead_data['Application_Product_Name'].str.strip()
 master_data['ServiceName'] = master_data['ServiceName'].str.strip()
 
-# Rename columns to make them consistent
+# Rename columns in master_data to match lead_data for a consistent merge
 master_data.rename(columns={'ServiceName': 'Application_Product_Name'}, inplace=True)
 
-# Merge datasets on the common column
-merged_data = pd.merge(lead_data, master_data, on='Application_Product_Name', how='left')
+# Group lead data by 'Unique_Global_Lead' and 'Application_Product_Name' to get the count of each application
+app_count_by_lead = lead_data.groupby(['Unique_Global_Lead', 'Application_Product_Name']).size().reset_index(name='App_Count')
 
-# Group by 'Unique_Global_Lead' and calculate the total 'CI_Count'
-ci_count_by_lead = merged_data.groupby('Unique_Global_Lead')['CI_Count'].sum().reset_index()
+# Merge datasets on 'Unique_Global_Lead' and 'Application_Product_Name'
+merged_data = pd.merge(app_count_by_lead, master_data, on='Application_Product_Name', how='left')
 
-# Now ci_count_by_lead DataFrame will have the total CI_Count for each Unique_Global_Lead
-print(ci_count_by_lead)
+# Group by 'Unique_Global_Lead' and 'Application_Product_Name' to get the total 'CI_Count' for each application
+final_data = merged_data.groupby(['Unique_Global_Lead', 'Application_Product_Name']).agg(Total_App_Count=('App_Count', 'sum'), Total_CI_Count=('CI_Count', 'sum')).reset_index()
+
+# Now final_data DataFrame will have the application names, their count, and total CI_Count for each Unique_Global_Lead
+print(final_data)
