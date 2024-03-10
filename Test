@@ -1,58 +1,26 @@
-/* Assuming a maximum width of 480px for small mobile devices */
-@media only screen and (max-width: 480px) {
-  .sidebar {
-    /* Collapse the sidebar or turn into a dropdown/toggle menu */
-    display: none; /* or adjust as needed for a toggle */
-  }
+# Assuming merged_data is your DataFrame after merging leadbase data and master_data
+# and that app_name and app_count have been calculated with the desired methods.
 
-  .main-content,
-  .card,
-  .card-body {
-    /* Allow content to fill the available space */
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
+# Get the details for each application product name without aggregation
+app_details = merged_data[['Global_Lead_First_Name', 'Application_Product_Name', 'CI_Count', 
+                           'Incident_Count', 'Total_Cost', 'Storage_Cost', 'Database_Cost']]
 
-  /* Adjust the size of the card titles, text, etc. */
-  .card-title {
-    font-size: 1rem; /* Adjust as needed */
-  }
+# You might want to drop duplicates if there are any
+app_details = app_details.drop_duplicates(subset=['Global_Lead_First_Name', 'Application_Product_Name'])
 
-  .card-text {
-    font-size: 0.8rem; /* Adjust as needed */
-  }
+# Merge the application counts and names with the detailed DataFrame
+app_counts = leadbasedata.groupby('Global_Lead_First_Name')['Application_Product_Name'].nunique().reset_index(name='App_Count')
+app_names = leadbasedata.groupby('Global_Lead_First_Name')['Application_Product_Name'].apply(lambda x: x.unique().tolist()).reset_index(name='App_Names')
 
-  /* Stack elements vertically within cards */
-  .card-body {
-    display: flex;
-    flex-direction: column;
-  }
+# Merge the counts and names into the details
+final_details = app_details.merge(app_counts, on='Global_Lead_First_Name', how='left')
+final_details = final_details.merge(app_names, on='Global_Lead_First_Name', how='left')
 
-  /* Adjust button sizes and layout */
-  .btn {
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    width: auto;
-  }
+# Now final_details DataFrame has the structure:
+# | Global_Lead_First_Name | Application_Product_Name | CI_Count | Incident_Count | Total_Cost | Storage_Cost | Database_Cost | App_Count | App_Names |
 
-  /* Adapt font sizes and element sizes as needed */
-  h1, h2, h3, p {
-    font-size: smaller;
-  }
+# Convert the detailed DataFrame to JSON if needed
+final_details_json = final_details.to_json(orient='records')
 
-  /* Any other specific styling adjustments for smaller screens */
-}
-
-/* You can add additional breakpoints for larger sizes as needed */
-@media only screen and (min-width: 481px) and (max-width: 768px) {
-  /* Styles for larger phones and small tablets */
-}
-
-@media only screen and (min-width: 769px) and (max-width: 1024px) {
-  /* Styles for tablets and small desktop screens */
-}
-
-@media only screen and (min-width: 1025px) {
-  /* Styles for desktop screens */
-}
+# Print or return the final details
+print("final_details", final_details_json)
