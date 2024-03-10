@@ -1,26 +1,58 @@
-import pandas as pd
+/* Assuming a maximum width of 480px for small mobile devices */
+@media only screen and (max-width: 480px) {
+  .sidebar {
+    /* Collapse the sidebar or turn into a dropdown/toggle menu */
+    display: none; /* or adjust as needed for a toggle */
+  }
 
-# Load the first Excel sheet that contains 'Unique_Global_Lead' and 'Application_Product_Name'
-lead_data = pd.read_excel('path_to_lead_data_excel.xlsx', sheet_name='SheetName')
+  .main-content,
+  .card,
+  .card-body {
+    /* Allow content to fill the available space */
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
-# Load the MasterSheet that contains 'ServiceName' and 'CI_Count'
-master_data = pd.read_excel('path_to_mastersheet_excel.xlsx', sheet_name='SheetName')
+  /* Adjust the size of the card titles, text, etc. */
+  .card-title {
+    font-size: 1rem; /* Adjust as needed */
+  }
 
-# Ensure the columns are named consistently and formatted
-lead_data['Application_Product_Name'] = lead_data['Application_Product_Name'].str.strip()
-master_data['ServiceName'] = master_data['ServiceName'].str.strip()
+  .card-text {
+    font-size: 0.8rem; /* Adjust as needed */
+  }
 
-# Rename columns in master_data to match lead_data for a consistent merge
-master_data.rename(columns={'ServiceName': 'Application_Product_Name'}, inplace=True)
+  /* Stack elements vertically within cards */
+  .card-body {
+    display: flex;
+    flex-direction: column;
+  }
 
-# Group lead data by 'Unique_Global_Lead' and 'Application_Product_Name' to get the count of each application
-app_count_by_lead = lead_data.groupby(['Unique_Global_Lead', 'Application_Product_Name']).size().reset_index(name='App_Count')
+  /* Adjust button sizes and layout */
+  .btn {
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    width: auto;
+  }
 
-# Merge datasets on 'Unique_Global_Lead' and 'Application_Product_Name'
-merged_data = pd.merge(app_count_by_lead, master_data, on='Application_Product_Name', how='left')
+  /* Adapt font sizes and element sizes as needed */
+  h1, h2, h3, p {
+    font-size: smaller;
+  }
 
-# Group by 'Unique_Global_Lead' and 'Application_Product_Name' to get the total 'CI_Count' for each application
-final_data = merged_data.groupby(['Unique_Global_Lead', 'Application_Product_Name']).agg(Total_App_Count=('App_Count', 'sum'), Total_CI_Count=('CI_Count', 'sum')).reset_index()
+  /* Any other specific styling adjustments for smaller screens */
+}
 
-# Now final_data DataFrame will have the application names, their count, and total CI_Count for each Unique_Global_Lead
-print(final_data)
+/* You can add additional breakpoints for larger sizes as needed */
+@media only screen and (min-width: 481px) and (max-width: 768px) {
+  /* Styles for larger phones and small tablets */
+}
+
+@media only screen and (min-width: 769px) and (max-width: 1024px) {
+  /* Styles for tablets and small desktop screens */
+}
+
+@media only screen and (min-width: 1025px) {
+  /* Styles for desktop screens */
+}
