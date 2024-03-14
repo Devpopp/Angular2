@@ -1,4 +1,74 @@
-# Assuming merged_data is your DataFrame after merging leadbase data and master_data
+import { Component, OnInit } from '@angular/core';
+import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
+import { DataService } from './data.service'; // Replace with your actual data service path
+
+@Component({
+  selector: 'app-my-dynamic-table',
+  template: `
+    <ag-grid-angular
+      style="width: 100%; height: 500px;" // You can adjust the height as needed
+      class="ag-theme-alpine"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [animateRows]="true"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      (gridReady)="onGridReady($event)">
+    </ag-grid-angular>
+  `
+})
+export class MyDynamicTableComponent implements OnInit {
+  private gridApi!: GridApi;
+  public columnDefs: ColDef[] = [];
+  public defaultColDef: ColDef = {
+    filter: 'agTextColumnFilter',
+    floatingFilter: true,
+    sortable: true,
+    resizable: true,
+    autoHeight: true,
+    minWidth: 100
+  };
+  public rowData: any[] = [];
+
+  constructor(private dataService: DataService) {}
+
+  ngOnInit(): void {
+    this.dataService.getCurrentData().subscribe(data => {
+      this.rowData = JSON.parse(data.currentmonthmaindata_json);
+      this.columnDefs = this.generateColumnDefinitions(this.rowData);
+    });
+  }
+
+  generateColumnDefinitions(data: any[]): ColDef[] {
+    if (data.length === 0) {
+      return [];
+    }
+    return Object.keys(data[0]).map(key => ({
+      field: key,
+      headerName: this.capitalizeFirstLetter(key.replace(/_/g, ' ')),
+      filter: true,
+      sortable: true,
+      resizable: true
+    }));
+  }
+
+  onGridReady(params: GridReadyEvent) {
+    this.gridApi = params.api;
+    this.gridApi.sizeColumnsToFit();
+  }
+
+  private capitalizeFirstLetter(string: string): string {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+}
+
+
+
+
+
+
+suming merged_data is your DataFrame after merging leadbase data and master_data
 # and that app_name and app_count have been calculated with the desired methods.
 
 # Get the details for each application product name without aggregation
