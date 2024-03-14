@@ -1,96 +1,50 @@
-import { Component, OnInit } from '@angular/core';
-import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { DataService } from './data.service'; // Replace with your actual data service path
+	<body>
+		<div id="app">
+			<my-app>
+			</my-app>
+		</div>
+		<object id="loading-spinner" style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%) scale(2)" type="image/svg+xml" data="https://ag-grid.com/images/ag-grid-loading-spinner.svg" aria-label="loading">
+		</object>
+		<script id="loading-script">(function() {
+    const cleanupLoading = () => {
+        if (document.querySelector('.ag-root-wrapper, .ag-chart-wrapper')) {
+            document.querySelector('#loading-spinner').remove();
+            document.querySelector('#loading-script').remove();
+        } else {
+            requestAnimationFrame(() => cleanupLoading());
+        }
+    };
 
-@Component({
-  selector: 'app-my-dynamic-table',
-  template: `
-    <ag-grid-angular
-      style="width: 100%; height: 500px;" // You can adjust the height as needed
-      class="ag-theme-alpine"
-      [rowData]="rowData"
-      [columnDefs]="columnDefs"
-      [defaultColDef]="defaultColDef"
-      [animateRows]="true"
-      [pagination]="true"
-      [paginationPageSize]="10"
-      (gridReady)="onGridReady($event)">
-    </ag-grid-angular>
-  `
-})
-export class MyDynamicTableComponent implements OnInit {
-  private gridApi!: GridApi;
-  public columnDefs: ColDef[] = [];
-  public defaultColDef: ColDef = {
-    filter: 'agTextColumnFilter',
-    floatingFilter: true,
-    sortable: true,
-    resizable: true,
-    autoHeight: true,
-    minWidth: 100
-  };
-  public rowData: any[] = [];
-
-  constructor(private dataService: DataService) {}
-
-  ngOnInit(): void {
-    this.dataService.getCurrentData().subscribe(data => {
-      this.rowData = JSON.parse(data.currentmonthmaindata_json);
-      this.columnDefs = this.generateColumnDefinitions(this.rowData);
-    });
-  }
-
-  generateColumnDefinitions(data: any[]): ColDef[] {
-    if (data.length === 0) {
-      return [];
-    }
-    return Object.keys(data[0]).map(key => ({
-      field: key,
-      headerName: this.capitalizeFirstLetter(key.replace(/_/g, ' ')),
-      filter: true,
-      sortable: true,
-      resizable: true
-    }));
-  }
-
-  onGridReady(params: GridReadyEvent) {
-    this.gridApi = params.api;
-    this.gridApi.sizeColumnsToFit();
-  }
-
-  private capitalizeFirstLetter(string: string): string {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  }
-}
-
-
-
-
-
-
-suming merged_data is your DataFrame after merging leadbase data and master_data
-# and that app_name and app_count have been calculated with the desired methods.
-
-# Get the details for each application product name without aggregation
-app_details = merged_data[['Global_Lead_First_Name', 'Application_Product_Name', 'CI_Count', 
-                           'Incident_Count', 'Total_Cost', 'Storage_Cost', 'Database_Cost']]
-
-# You might want to drop duplicates if there are any
-app_details = app_details.drop_duplicates(subset=['Global_Lead_First_Name', 'Application_Product_Name'])
-
-# Merge the application counts and names with the detailed DataFrame
-app_counts = leadbasedata.groupby('Global_Lead_First_Name')['Application_Product_Name'].nunique().reset_index(name='App_Count')
-app_names = leadbasedata.groupby('Global_Lead_First_Name')['Application_Product_Name'].apply(lambda x: x.unique().tolist()).reset_index(name='App_Names')
-
-# Merge the counts and names into the details
-final_details = app_details.merge(app_counts, on='Global_Lead_First_Name', how='left')
-final_details = final_details.merge(app_names, on='Global_Lead_First_Name', how='left')
-
-# Now final_details DataFrame has the structure:
-# | Global_Lead_First_Name | Application_Product_Name | CI_Count | Incident_Count | Total_Cost | Storage_Cost | Database_Cost | App_Count | App_Names |
-
-# Convert the detailed DataFrame to JSON if needed
-final_details_json = final_details.to_json(orient='records')
-
-# Print or return the final details
-print("final_details", final_details_json)
+    cleanupLoading();
+})()</script>
+		<script>document.write('<base href="' + document.location + '" />');</script>
+		<script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.6.5/minified.js">
+		</script>
+		<script src="https://cdn.jsdelivr.net/npm/zone.js@0.11.2/dist/zone.min.js">
+		</script>
+		<script>
+            var appLocation = './';
+            var boilerplatePath = '';
+            var systemJsMap = {
+                "@ag-grid-community/angular": "https://cdn.jsdelivr.net/npm/@ag-grid-community/angular@31.1.1/",
+                "@ag-grid-community/styles": "https://cdn.jsdelivr.net/npm/@ag-grid-community/styles@31.1.1",
+                "ag-grid-angular": "https://cdn.jsdelivr.net/npm/ag-grid-angular@31.1.1/",
+                "ag-grid-charts-enterprise": "https://cdn.jsdelivr.net/npm/ag-grid-charts-enterprise@31.1.1/",
+                "ag-grid-community": "https://cdn.jsdelivr.net/npm/ag-grid-community@31.1.1",
+                "ag-grid-enterprise": "https://cdn.jsdelivr.net/npm/ag-grid-enterprise@31.1.1/"
+            };
+            var systemJsPaths = {
+                "@ag-grid-community/client-side-row-model": "https://cdn.jsdelivr.net/npm/@ag-grid-community/client-side-row-model@31.1.1/dist/client-side-row-model.cjs.min.js",
+                "@ag-grid-community/core": "https://cdn.jsdelivr.net/npm/@ag-grid-community/core@31.1.1/dist/core.cjs.min.js",
+                "@ag-grid-community/csv-export": "https://cdn.jsdelivr.net/npm/@ag-grid-community/csv-export@31.1.1/dist/csv-export.cjs.min.js",
+                "@ag-grid-community/infinite-row-model": "https://cdn.jsdelivr.net/npm/@ag-grid-community/infinite-row-model@31.1.1/dist/infinite-row-model.cjs.min.js",
+                "ag-charts-community": "https://cdn.jsdelivr.net/npm/ag-charts-community/"
+            };
+        </script>
+		<script src="https://cdn.jsdelivr.net/npm/systemjs@0.21.6/dist/system.js">
+		</script>
+		<script src="systemjs.config.js">
+		</script>
+		<script>System.import('./main.ts').catch(function(err) { console.error(err); });</script>
+	</body>
+</html>
