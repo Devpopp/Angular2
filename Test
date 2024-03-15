@@ -1,36 +1,12 @@
-import { Component, HostListener } from '@angular/core';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
-})
-export class AppComponent {
-  tiles = [
-    { text: 'One', cols: 1, rows: 1 },
-    { text: 'Two', cols: 1, rows: 1 },
-    // Add more tiles as per your requirement
-  ];
-
-  @HostListener('window:resize', ['$event'])
-  onResize(event) {
-    this.adjustGrid(event.target.innerWidth);
-  }
-
-  ngOnInit() {
-    this.adjustGrid(window.innerWidth);
-  }
-
-  adjustGrid(width) {
-    if (width > 800) { // Define your breakpoints
-      this.tiles.forEach(tile => {
-        tile.cols = 1;
-        tile.rows = 1;
-      });
-    } else if (width > 400) {
-      // Adjust cols and rows for medium screens
-    } else {
-      // Adjust cols and rows for small screens
+.mat-grid-tile {
+  transition: all .3s ease;
+  mat-card {
+    height: 100%;
+    display: flex;
+    align-items: center; // Centers content vertically
+    justify-content: center; // Centers content horizontally
+    .tile-content {
+      position: absolute;
     }
   }
 }
