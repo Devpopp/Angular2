@@ -1,48 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tooltip Test</title>
-<style>
-  .tooltip {
-    position: relative;
-    display: inline-block;
+import { Component } from '@angular/core';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexXAxis,
+  ApexDataLabels,
+  ApexTooltip,
+  ApexYAxis,
+  ApexTitleSubtitle,
+  ApexStroke,
+  ApexFill,
+  ApexMarkers,
+  ApexResponsive
+} from 'ng-apexcharts';
+
+export type ChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  stroke: ApexStroke;
+  dataLabels: ApexDataLabels;
+  yaxis: ApexYAxis;
+  title: ApexTitleSubtitle;
+  labels: string[];
+  tooltip: ApexTooltip;
+  fill: ApexFill;
+  markers: ApexMarkers;
+  responsive: ApexResponsive[];
+};
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  public chartOptions: Partial<ChartOptions>;
+
+  constructor() {
+    this.chartOptions = {
+      series: [
+        {
+          name: 'series1',
+          data: [31, 40, 28, 51, 42, 109, 100]
+        },
+        {
+          name: 'series2',
+          data: [11, 32, 45, 32, 34, 52, 41]
+        }
+      ],
+      chart: {
+        height: 350,
+        type: 'area'
+      },
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        curve: 'smooth'
+      },
+      xaxis: {
+        type: 'datetime',
+        categories: [
+          '2018-09-19T00:00:00',
+          '2018-09-19T01:30:00',
+          '2018-09-19T02:30:00',
+          '2018-09-19T03:30:00',
+          '2018-09-19T04:30:00',
+          '2018-09-19T05:30:00',
+          '2018-09-19T06:30:00'
+        ]
+      },
+      tooltip: {
+        x: {
+          format: 'dd/MM/yy HH:mm'
+        }
+      },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.7,
+          opacityTo: 0.9,
+          stops: [0, 100]
+        }
+      }
+    };
   }
-
-  .tooltip .tooltip-text {
-    visibility: hidden;
-    width: 120px;
-    background-color: black;
-    color: white;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px 0;
-
-    /* Position the tooltip */
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -60px;
-
-    /* Fade in tooltip */
-    opacity: 0;
-    transition: opacity 0.6s;
-  }
-
-  .tooltip:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
-  }
-</style>
-</head>
-<body>
-
-<div class="tooltip">
-  <button>Hover over me</button>
-  <span class="tooltip-text">Tooltip text</span>
-</div>
-
-</body>
-</html>
+}
