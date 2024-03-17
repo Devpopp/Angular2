@@ -1,102 +1,66 @@
-<apx-chart
-  [series]="chartOptions.series"
-  [chart]="chartOptions.chart"
-  [xaxis]="chartOptions.xaxis"
-  [stroke]="chartOptions.stroke"
-  [dataLabels]="chartOptions.dataLabels"
-  [tooltip]="chartOptions.tooltip"
-  [fill]="chartOptions.fill">
-</apx-chart>
-
-
-
-
-import { Component } from '@angular/core';
 import {
   ApexAxisChartSeries,
   ApexChart,
   ApexXAxis,
   ApexDataLabels,
-  ApexTooltip,
+  ApexPlotOptions,
   ApexYAxis,
-  ApexTitleSubtitle,
-  ApexStroke,
-  ApexFill,
-  ApexMarkers,
-  ApexResponsive
+  ApexLegend,
+  ApexColors
 } from 'ng-apexcharts';
 
 export type ChartOptions = {
   series: ApexAxisChartSeries;
   chart: ApexChart;
   xaxis: ApexXAxis;
-  stroke: ApexStroke;
   dataLabels: ApexDataLabels;
+  plotOptions: ApexPlotOptions;
   yaxis: ApexYAxis;
-  title: ApexTitleSubtitle;
-  labels: string[];
-  tooltip: ApexTooltip;
-  fill: ApexFill;
-  markers: ApexMarkers;
-  responsive: ApexResponsive[];
+  legend: ApexLegend;
+  colors: ApexColors;
 };
 
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
-})
-export class AppComponent {
-  public chartOptions: Partial<ChartOptions>;
+// Component class
+export class YourComponent {
+  public chart: Partial<ChartOptions>;
 
   constructor() {
-    this.chartOptions = {
+    this.chart = {
       series: [
         {
-          name: 'series1',
-          data: [31, 40, 28, 51, 42, 109, 100]
+          name: 'PRODUCT A',
+          data: [44, 55, 41, 67, 22, 43]
         },
-        {
-          name: 'series2',
-          data: [11, 32, 45, 32, 34, 52, 41]
-        }
+        // ... more series for other products
       ],
       chart: {
+        type: 'bar',
         height: 350,
-        type: 'area'
+        stacked: true
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false
+        }
+      },
+      xaxis: {
+        categories: ['Jan 11', 'Jan 12', 'Jan 13', 'Jan 14', 'Jan 15', 'Jan 16']
+      },
+      yaxis: {
+        title: {
+          text: 'Values'
+        }
       },
       dataLabels: {
         enabled: false
       },
-      stroke: {
-        curve: 'smooth'
+      legend: {
+        position: 'right',
+        offsetY: 40
       },
-      xaxis: {
-        type: 'datetime',
-        categories: [
-          '2018-09-19T00:00:00',
-          '2018-09-19T01:30:00',
-          '2018-09-19T02:30:00',
-          '2018-09-19T03:30:00',
-          '2018-09-19T04:30:00',
-          '2018-09-19T05:30:00',
-          '2018-09-19T06:30:00'
-        ]
-      },
-      tooltip: {
-        x: {
-          format: 'dd/MM/yy HH:mm'
-        }
-      },
-      fill: {
-        type: 'gradient',
-        gradient: {
-          shadeIntensity: 1,
-          opacityFrom: 0.7,
-          opacityTo: 0.9,
-          stops: [0, 100]
-        }
-      }
+      colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560']
     };
   }
 }
+
+  
