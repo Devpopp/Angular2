@@ -1,3 +1,34 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  columnDefs = [
+    { field: 'make', sortable: true, filter: true, checkboxSelection: true },
+    { field: 'model', sortable: true, filter: true },
+    { field: 'price', sortable: true, filter: true }
+  ];
+
+  defaultColDef = {
+    flex: 1,
+    minWidth: 100,
+    resizable: true,
+  };
+
+  rowData = [
+    { make: 'Toyota', model: 'Celica', price: 35000 },
+    { make: 'Ford', model: 'Mondeo', price: 32000 },
+    // ... more row data here
+  ];
+
+  paginationPageSize = 10;
+}
+
+
+
 import {
   ApexAxisChartSeries,
   ApexChart,
