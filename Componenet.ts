@@ -1,5 +1,37 @@
 #!/bin/bash
 
+# The file containing the counts and filenames
+input_file="/path/to/your/file.txt"
+
+# The file where the updated counts and filenames will be stored
+output_file="/path/to/your/updated_file.txt"
+
+# Run the awk command to update the counts
+awk '
+  # Match lines ending with the specified patterns
+  /(ESM EURO:|ESM ASIA:|ESM NAMR:)$/ {
+    # Subtract 3 from the count on the previous line
+    prev_line = $1 - 3
+    # Print the updated count
+    print prev_line
+    # Print the current line (the description)
+    print
+    # Skip to the next record so we don't print the previous line at the end
+    next
+  }
+  # Store the current line to be printed in the next cycle (if it's a count line)
+  { prev_line = $0 }
+' "$input_file" > "$output_file"
+
+# Output the path to the updated file
+echo "Updated counts written to: $output_file"
+
+
+......
+
+
+#!/bin/bash
+
 # Define the files to update, read from the image or somewhere else
 declare -A files_to_update=(["ESM EURO:"]=0 ["ESM ASIA:"]=0 ["ESM NAMR:"]=0)
 
