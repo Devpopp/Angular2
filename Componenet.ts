@@ -1,3 +1,32 @@
+#!/bin/bash
+
+# Define the files to update, read from the image or somewhere else
+declare -A files_to_update=(["ESM EURO:"]=0 ["ESM ASIA:"]=0 ["ESM NAMR:"]=0)
+
+# Read from the file and update counts
+awk '
+    # For lines that contain the filenames to be updated, hold the count
+    /(ESM EURO:|ESM ASIA:|ESM NAMR:)/ {
+        # Subtract 3 from the count
+        $1 = $1 - 3
+
+        # Remember the updated count for this filename
+        counts[$2] = $1
+    }
+    # For all other lines, if they contain a filename we've updated, print the new count
+    {
+        if(counts[$2] != "") {
+            print counts[$2] " " $2
+        } else {
+            print
+        }
+    }
+' file_with_counts.txt > updated_file_with_counts.txt
+
+
+
+
+
 awk -F ': ' '/file1.txt|file2.txt|file3.txt/{ $2=$2-3 }1 {print $1 ": " $2}' counts.txt > temp_counts.txt
 awk -F ': ' '{if ($1 ~ /file1.txt|file2.txt|file3.txt/) $2=$2-3; print $1 ": " $2}' counts.txt > temp_counts.txt
 
