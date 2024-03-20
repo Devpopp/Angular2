@@ -1,3 +1,6 @@
+awk -F ': ' '/file1.txt|file2.txt|file3.txt/{ $2=$2-3 }1 {print $1 ": " $2}' counts.txt > temp_counts.txt
+
+
 import { Component } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
