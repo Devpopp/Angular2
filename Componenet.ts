@@ -1,4 +1,5 @@
 awk -F ': ' '/file1.txt|file2.txt|file3.txt/{ $2=$2-3 }1 {print $1 ": " $2}' counts.txt > temp_counts.txt
+awk -F ': ' '{if ($1 ~ /file1.txt|file2.txt|file3.txt/) $2=$2-3; print $1 ": " $2}' counts.txt > temp_counts.txt
 
 
 import { Component } from '@angular/core';
