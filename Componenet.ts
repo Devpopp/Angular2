@@ -1,3 +1,30 @@
+/* Adjust the height of the ng-select dropdown panel */
+.ng-dropdown-panel {
+  max-height: 300px; /* Adjust this value to fit 6 items */
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+/* Style the ng-select search box */
+.ng-select .ng-select-container .ng-value-container {
+  align-items: center; /* Vertically center the search box content */
+}
+
+/* Additional styling for the ng-select component */
+.ng-select .ng-select-container {
+  border: 1px solid #ccc; /* Border color for the select container */
+  border-radius: 4px; /* Rounded corners for the select container */
+}
+
+/* Styling for the ng-select items */
+.ng-select .ng-option {
+  padding: 10px; /* Spacing inside each dropdown item */
+  /* Add any additional styling you want for each item */
+}
+
+
+
+
+
 #!/bin/bash
 
 # The file containing the counts and filenames
