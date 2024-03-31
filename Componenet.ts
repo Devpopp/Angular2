@@ -1,103 +1,68 @@
-/* Adjust the height of the ng-select dropdown panel */
-.ng-dropdown-panel {
-  max-height: 300px; /* Adjust this value to fit 6 items */
-  overflow-y: auto; /* Enable vertical scrolling */
-}
+<!-- Column Selectors for Comparison -->
+<select [(ngModel)]="selectedColumnCurrent" (change)="updateChart()">
+  <option *ngFor="let col of columnDefs" [ngValue]="col.field">{{ col.headerName }} (Current)</option>
+</select>
 
-/* Style the ng-select search box */
-.ng-select .ng-select-container .ng-value-container {
-  align-items: center; /* Vertically center the search box content */
-}
+<select [(ngModel)]="selectedColumnPrevious" (change)="updateChart()">
+  <option *ngFor="let col of columnDefs" [ngValue]="col.field">{{ col.headerName }} (Previous)</option>
+</select>
 
-/* Additional styling for the ng-select component */
-.ng-select .ng-select-container {
-  border: 1px solid #ccc; /* Border color for the select container */
-  border-radius: 4px; /* Rounded corners for the select container */
-}
+<!-- ApexCharts Component -->
+<apx-chart [series]="chartSeries" [chart]="chartOptions" [xaxis]="chartXaxis"></apx-chart>
 
-/* Styling for the ng-select items */
-.ng-select .ng-option {
-  padding: 10px; /* Spacing inside each dropdown item */
-  /* Add any additional styling you want for each item */
-}
+<!-- Download Button -->
+<button (click)="downloadCSV()">Download CSV</button>
 
 
+export class YourComponent {
+  selectedColumnCurrent: string;
+  selectedColumnPrevious: string;
+  rowData3: any[]; // Your data array
+  columnDefs: any[]; // Your column definitions array
+  chartOptions: any; // ApexCharts options
+  chartSeries: any[];
+  chartXaxis: any;
 
-
-
-#!/bin/bash
-
-# The file containing the counts and filenames
-input_file="/path/to/your/file.txt"
-
-# The file where the updated counts and filenames will be stored
-output_file="/path/to/your/updated_file.txt"
-
-# Run the awk command to update the counts
-awk '
-  # Match lines ending with the specified patterns
-  /(ESM EURO:|ESM ASIA:|ESM NAMR:)$/ {
-    # Subtract 3 from the count on the previous line
-    prev_line = $1 - 3
-    # Print the updated count
-    print prev_line
-    # Print the current line (the description)
-    print
-    # Skip to the next record so we don't print the previous line at the end
-    next
+  constructor() {
+    // Initialize your chart options here
+    this.chartOptions = {
+      // ...
+    };
+    this.chartXaxis = {
+      // ...
+    };
   }
-  # Store the current line to be printed in the next cycle (if it's a count line)
-  { prev_line = $0 }
-' "$input_file" > "$output_file"
 
-# Output the path to the updated file
-echo "Updated counts written to: $output_file"
-
-
-......
-
-
-#!/bin/bash
-
-# Define the files to update, read from the image or somewhere else
-declare -A files_to_update=(["ESM EURO:"]=0 ["ESM ASIA:"]=0 ["ESM NAMR:"]=0)
-
-# Read from the file and update counts
-awk '
-    # For lines that contain the filenames to be updated, hold the count
-    /(ESM EURO:|ESM ASIA:|ESM NAMR:)/ {
-        # Subtract 3 from the count
-        $1 = $1 - 3
-
-        # Remember the updated count for this filename
-        counts[$2] = $1
-    }
-    # For all other lines, if they contain a filename we've updated, print the new count
-    {
-        if(counts[$2] != "") {
-            print counts[$2] " " $2
-        } else {
-            print
+  updateChart() {
+    if (this.selectedColumnCurrent && this.selectedColumnPrevious) {
+      this.chartSeries = [
+        {
+          name: 'Current',
+          data: this.rowData3.map(row => row[this.selectedColumnCurrent])
+        },
+        {
+          name: 'Previous',
+          data: this.rowData3.map(row => row[this.selectedColumnPrevious])
         }
+      ];
+
+      this.chartXaxis = {
+        categories: this.rowData3.map(row => row['Service Name'])
+      };
     }
-' file_with_counts.txt > updated_file_with_counts.txt
+  }
+
+  downloadCSV() {
+    // Implement CSV download logic as previously described
+  }
+}
 
 
 
 
 
-awk -F ': ' '/file1.txt|file2.txt|file3.txt/{ $2=$2-3 }1 {print $1 ": " $2}' counts.txt > temp_counts.txt
-awk -F ': ' '{if ($1 ~ /file1.txt|file2.txt|file3.txt/) $2=$2-3; print $1 ": " $2}' counts.txt > temp_counts.txt
 
 
-import { Component } from '@angular/core';
-import { AgGridAngular } from 'ag-grid-angular';
-import { ColDef } from 'ag-grid-community';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css';
-
-@Component({
-  selector: 'my-app',
   standalone: true,
   imports: [AgGridAngular],
   template: `<ag-grid-angular
