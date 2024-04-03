@@ -1,3 +1,40 @@
+import pandas as pd
+import xml.etree.ElementTree as ET
+from zipfile import ZipFile
+import os
+
+# Read the Excel file
+df = pd.read_excel('/path/to/your/excel.xlsx')
+
+# Create a directory for XML files if it doesn't exist
+xml_dir = 'xml_files'
+os.makedirs(xml_dir, exist_ok=True)
+
+# Function to convert a dataframe row to an XML file
+def row_to_xml(row):
+    # Create the XML elements here according to your structure
+    root = ET.Element('root')
+    # Example: ET.SubElement(root, 'child').text = str(row['column_name'])
+    return ET.tostring(root, encoding='unicode')
+
+# Iterate over the dataframe rows
+for index, row in df.iterrows():
+    xml_content = row_to_xml(row)
+    xml_file_path = os.path.join(xml_dir, f'row_{index}.xml')
+    with open(xml_file_path, 'w') as file:
+        file.write(xml_content)
+
+# Zip the XML files
+with ZipFile('/path/to/your/xml_files.zip', 'w') as zipf:
+    for root, dirs, files in os.walk(xml_dir):
+        for file in files:
+            zipf.write(os.path.join(root, file))
+
+# Remove the XML directory if you don't need it anymore
+# shutil.rmtree(xml_dir)
+
+
+
 <!-- Column Selectors for Comparison -->
 <select [(ngModel)]="selectedColumnCurrent" (change)="updateChart()">
   <option *ngFor="let col of columnDefs" [ngValue]="col.field">{{ col.headerName }} (Current)</option>
