@@ -1,0 +1,29 @@
+function filterAndMergeData(getportfolioleadData: {[key: string]: string[]}, currTableData: any[]): any[] {
+  // Step 1: Flatten and normalize the portfolio data into a Set
+  const normalizedPortfolioApps = new Set<string>();
+  Object.values(getportfolioleadData).forEach(appList => {
+    appList.forEach(app => normalizedPortfolioApps.add(app.trim().toUpperCase()));
+  });
+
+  // Step 2: Filter currTableData based on the portfolio apps
+  let filteredData = currTableData.filter(row => 
+    normalizedPortfolioApps.has(row[0].trim().toUpperCase())
+  );
+
+  // Step 3: Add missing apps from portfolio data with zero data points
+  normalizedPortfolioApps.forEach(app => {
+    if (!filteredData.some(row => row[0].trim().toUpperCase() === app)) {
+      const zeroDataPoints = new Array(currTableData[0].length - 1).fill(0);
+      filteredData.push([app, ...zeroDataPoints]);
+    }
+  });
+
+  return filteredData;
+}
+
+// Usage:
+// Assuming getportfolioleadData is the object containing your app names as shown in the console,
+// and currTableData is the array with your current table data.
+const filteredTableData = filterAndMergeData(getportfolioleadData, currTableData);
+
+// After the function is executed, `filteredTableData` will contain your desired result.
