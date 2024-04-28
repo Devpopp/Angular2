@@ -1,27 +1,37 @@
 import pandas as pd
 
-# DataFrames representing your data
-currentmonthmaindata_json = pd.DataFrame({
-    'app_name': ['AppOne', 'AppTwo', 'AppThree', 'AppFour'],
-    # ... other columns ...
-})
-app_name_data = pd.DataFrame({
-    'app_name': ['AppOne', 'AppThree'],
+# Sample data for 'currentmonthmaindata_df' (should be replaced with actual data)
+currentmonthmaindata_df = pd.DataFrame({
+    'app_name': ['AppOne', 'Apptio ETL', 'AppThree', 'AppFour', 'BARCAP NEW PRODUCT SERVICES'],
     # ... other columns ...
 })
 
-def filter_data_by_portfolio_apps():
-    # Inline normalization of app names and filtering the DataFrame
-    filtered_data = currentmonthmaindata_json[
-        currentmonthmaindata_json['app_name'].apply(
-            lambda name: name.lower().replace("(", '').replace(")", '').strip()
-        ).isin(
-            app_name_data['app_name'].apply(
-                lambda name: name.lower().replace("(", '').replace(")", '').strip()
-            )
-        )
-    ]
+# Sample 'app_name_data' dictionary directly containing the data (should be replaced with actual data)
+app_name_data = {
+    "Dipesh Gandhi": [
+        "APPTIO Billing Engine (INFORMATICA)", "Apptio ETL", "APPTIO R12",
+        # ... other app names
+    ],
+    "Rajya Lakshmi Tokachichu": [
+        "BARCAP NEW PRODUCT SERVICES",
+        # ... other app names
+    ],
+    # ... other keys and values ...
+}
+
+def filter_current_month_data():
+    # Flatten the list of all app names from app_name_data dictionary
+    all_app_names = [app for apps_list in app_name_data.values() for app in apps_list]
+    
+    # Normalize app names and filter the DataFrame
+    filtered_data = currentmonthmaindata_df[currentmonthmaindata_df['app_name'].apply(
+        lambda name: name.lower().replace("(", "").replace(")", "").strip()
+    ).isin(
+        [name.lower().replace("(", "").replace(")", "").strip() for name in all_app_names]
+    )]
+    
     return filtered_data
 
-# Execution of the function to get the filtered data
-filtered_curr_table_data = filter_data_by_portfolio_apps()
+# Call the function and get the filtered data
+filtered_current_month_data = filter_current_month_data()
+filtered_current_month_data
