@@ -1,26 +1,35 @@
-# ... previous code ...
+import pandas as pd
 
-# Get portfolio data
+# Assuming getportfolio_leadData() returns a dictionary with 'app_name_data' being a list of app names
 app_name_data = getportfolio_leadData()
 
-# Ensure the 'app_name_data' key exists in the returned data
-if 'app_name_data' in app_name_data:
-    # Normalize and create a set of app names
-    app_name_set = set(
-        ''.join(char for char in name.lower().replace('_', ' ') if char.isalnum() or char.isspace()).strip()
-        for name in app_name_data['app_name_data'] if isinstance(name, str)
-    )
+# Normalizing app names
+normalized_app_names = {
+    name.lower().replace('_', ' ').strip()
+    for name in app_name_data['app_name_data'] if isinstance(name, str)
+}
 
-# Assuming 'currentmonthmaindata_json' is a dictionary that has an 'app_name_data' key
-for app in set(currentmonthmaindata_json['app_name_data']) - app_name_set:
-    # Normalize app names directly in the loop
-    normalized_app = ''.join(char for char in app.lower().replace('_', ' ') if char.isalnum() or char.isspace()).strip()
-    if normalized_app not in app_name_set:
-        new_row = {'app_name_data': normalized_app.upper()}
-        # Suppose filtered_data is a DataFrame you are using to append new rows
-        filtered_data = filtered_data.append(new_row, ignore_index=True)
+# Assuming abhi_json is a list of dictionaries that represent your rows
+# And each row dictionary has an 'ApplicationName' key
 
-# Assuming you want to replace the 'app_name_data' in 'currentmonthmaindata_json' with the normalized names
-currentmonthmaindata_json['app_name_data'] = [name.upper() for name in app_name_set]
+# Filtering abhi_json based on normalized app names
+filtered_abhi_json = [
+    row for row in abhi_json
+    if row['ApplicationName'].lower().replace('_', ' ').strip() in normalized_app_names
+]
 
-# ... rest of your code ...
+# Creating a DataFrame from filtered data
+filtered_data_df = pd.DataFrame(filtered_abhi_json)
+
+# Assuming you want to change the 'ApplicationName' to uppercase for the matching names
+for ind, row in filtered_data_df.iterrows():
+    app_name = row['ApplicationName'].lower().replace('_', ' ').strip()
+    if app_name in normalized_app_names:
+        filtered_data_df.at[ind, 'ApplicationName'] = app_name.upper()
+
+# Now filtered_data_df will have the filtered and updated data
+# You can convert it back to a list of dictionaries if needed
+updated_abhi_json = filtered_data_df.to_dict(orient='records')
+
+# Display the updated JSON data
+print(updated_abhi_json)
