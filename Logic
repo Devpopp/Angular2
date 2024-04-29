@@ -1,37 +1,26 @@
-import pandas as pd
+# ... previous code ...
 
-# Sample data for 'currentmonthmaindata_df' (should be replaced with actual data)
-currentmonthmaindata_df = pd.DataFrame({
-    'app_name': ['AppOne', 'Apptio ETL', 'AppThree', 'AppFour', 'BARCAP NEW PRODUCT SERVICES'],
-    # ... other columns ...
-})
+# Get portfolio data
+app_name_data = getportfolio_leadData()
 
-# Sample 'app_name_data' dictionary directly containing the data (should be replaced with actual data)
-app_name_data = {
-    "Dipesh Gandhi": [
-        "APPTIO Billing Engine (INFORMATICA)", "Apptio ETL", "APPTIO R12",
-        # ... other app names
-    ],
-    "Rajya Lakshmi Tokachichu": [
-        "BARCAP NEW PRODUCT SERVICES",
-        # ... other app names
-    ],
-    # ... other keys and values ...
-}
+# Ensure the 'app_name_data' key exists in the returned data
+if 'app_name_data' in app_name_data:
+    # Normalize and create a set of app names
+    app_name_set = set(
+        ''.join(char for char in name.lower().replace('_', ' ') if char.isalnum() or char.isspace()).strip()
+        for name in app_name_data['app_name_data'] if isinstance(name, str)
+    )
 
-def filter_current_month_data():
-    # Flatten the list of all app names from app_name_data dictionary
-    all_app_names = [app for apps_list in app_name_data.values() for app in apps_list]
-    
-    # Normalize app names and filter the DataFrame
-    filtered_data = currentmonthmaindata_df[currentmonthmaindata_df['app_name'].apply(
-        lambda name: name.lower().replace("(", "").replace(")", "").strip()
-    ).isin(
-        [name.lower().replace("(", "").replace(")", "").strip() for name in all_app_names]
-    )]
-    
-    return filtered_data
+# Assuming 'currentmonthmaindata_json' is a dictionary that has an 'app_name_data' key
+for app in set(currentmonthmaindata_json['app_name_data']) - app_name_set:
+    # Normalize app names directly in the loop
+    normalized_app = ''.join(char for char in app.lower().replace('_', ' ') if char.isalnum() or char.isspace()).strip()
+    if normalized_app not in app_name_set:
+        new_row = {'app_name_data': normalized_app.upper()}
+        # Suppose filtered_data is a DataFrame you are using to append new rows
+        filtered_data = filtered_data.append(new_row, ignore_index=True)
 
-# Call the function and get the filtered data
-filtered_current_month_data = filter_current_month_data()
-filtered_current_month_data
+# Assuming you want to replace the 'app_name_data' in 'currentmonthmaindata_json' with the normalized names
+currentmonthmaindata_json['app_name_data'] = [name.upper() for name in app_name_set]
+
+# ... rest of your code ...
