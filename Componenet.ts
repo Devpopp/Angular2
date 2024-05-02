@@ -1,39 +1,49 @@
-.ripple-container {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
+import { Component, OnInit } from '@angular/core';
 
-.ripple-container div {
-  position: absolute;
-  border: 4px solid #fff;
-  border-radius: 50%;
-  animation: ball-scale-ripple-multiple 1.25s 0s infinite cubic-bezier(.21,.53,.56,.8);
-  opacity: 0;
-}
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent implements OnInit {
+  public columnDefs;
+  public rowData;
 
-.ripple-container div:nth-child(1) {
-  animation-delay: 0s;
-}
-.ripple-container div:nth-child(2) {
-  animation-delay: -0.4s;
-}
-.ripple-container div:nth-child(3) {
-  animation-delay: -0.8s;
-}
-
-@keyframes ball-scale-ripple-multiple {
-  0% {
-    transform: scale(0);
-    opacity: 1;
+  constructor() {
+    // Constructor stays clean of initialization logic
   }
-  70% {
-    transform: scale(1);
-    opacity: 0.7;
+
+  ngOnInit() {
+    this.initializeData();
   }
-  100% {
-    transform: scale(1.2);
-    opacity: 0;
+
+  async initializeData() {
+    const headers = ['Mar-24', 'Feb-24', 'Jan-24']; // Simulated headers fetched from backend
+    const data = [
+      { 'Jan-24': 100, 'Feb-24': 200, 'Mar-24': 300 },
+      { 'Jan-24': 110, 'Feb-24': 210, 'Mar-24': 310 }
+    ]; // Simulated data rows
+
+    const sortedHeaders = this.sortHeadersByMonth(headers);
+    this.columnDefs = this.generateColumnDefinitions(sortedHeaders);
+    this.rowData = data;
+  }
+
+  sortHeadersByMonth(headers: string[]) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return headers.sort((a, b) => {
+      const [monthA, yearA] = a.split('-');
+      const [monthB, yearB] = b.split('-');
+      const yearComparison = parseInt(yearA) - parseInt(yearB);
+      if (yearComparison !== 0) return yearComparison;
+      return months.indexOf(monthA) - months.indexOf(monthB);
+    });
+  }
+
+  generateColumnDefinitions(headers: string[]) {
+    return headers.map(header => ({
+      headerName: header,
+      field: header
+    }));
   }
 }
