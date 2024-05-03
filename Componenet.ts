@@ -1,7 +1,33 @@
-// Custom sorter to sort by month and year in the "Mon-YY" format
 import pandas as pd
 
-# Sample DataFrame setup
+# Define the mapping of months to numbers
+month_mapping = {
+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+}
+
+def prepare_and_sort_df(df):
+    # Define the custom sorting function within this function to use month_mapping
+    def custom_sort(col):
+        month, year = col.split('-')
+        month_number = month_mapping.get(month[:3], 0)  # Default to 0 if month is not found
+        return int(year), month_number  # Sort by year, then by month
+
+    # Separate fixed and date columns
+    fixed_columns = df.columns[:6].tolist()
+    date_columns = df.columns[6:].tolist()
+
+    # Sort date columns using the custom sort function
+    sorted_date_columns = sorted(date_columns, key=custom_sort)
+
+    # Combine fixed and sorted date columns
+    final_columns_order = fixed_columns + sorted_date_columns
+
+    # Reindex the DataFrame with the new column order
+    df = df.reindex(columns=final_columns_order)
+    return df
+
+# Example usage:
 data = {
     'ServiceName': ['Service A', 'Service B', 'Service C'],
     'Exp.-Yearly': [100000, 200000, 300000],
@@ -19,27 +45,8 @@ data = {
     'Jul-24': [180, 280, 380],
     'Aug-24': [170, 270, 370]
 }
-
 df = pd.DataFrame(data)
 
-# Sorting function that doesn't rely on pd.to_datetime
-def custom_sort(col):
-    month, year = col.split('-')
-    month_number = month_mapping.get(month[:3], 0)  # Default to 0 if month is not found
-    return int(year), month_number  # Sort by year, then by month
-
-# Separate fixed and date columns
-fixed_columns = df.columns[:6].tolist()
-date_columns = df.columns[6:].tolist()
-
-# Sort date columns using custom sort function
-sorted_date_columns = sorted(date_columns, key=custom_sort)
-
-# Combine fixed and sorted date columns
-final_columns_order = fixed_columns + sorted_date_columns
-
-# Reindex the DataFrame with the new column order
-df = df.reindex(columns=final_columns_order)
-
-# Output the DataFrame to check the new headers
-print(df)
+# Process and sort DataFrame
+df_sorted = prepare_and_sort_df(df)
+print(df_sorted)
