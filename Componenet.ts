@@ -1,5 +1,45 @@
 import pandas as pd
 
+def prepare_and_sort_df(df, month_mapping):
+    # Function to create custom sorting key
+    def custom_sort(col):
+        parts = col.split('-')
+        if len(parts) == 2 and parts[0] in month_mapping:
+            return month_mapping[parts[0]] + int(parts[1]) * 12
+        return 0  # Default for non-date columns or improperly formatted ones
+
+    # Applying the custom sorting to DataFrame columns
+    sorted_columns = sorted(df.columns, key=custom_sort)
+    return df[sorted_columns]
+
+# Assume 'data' includes your costtrendmaindata, which should be a dictionary that pandas can convert to a DataFrame
+data = {
+    'ServiceName': ['Service A', 'Service B', 'Service C'],  # Placeholder for non-date columns
+    'Jan-24': [100, 200, 300],
+    'May-24': [150, 250, 350],
+    # Add all other columns
+}
+
+month_mapping = {
+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+}
+
+# Create DataFrame from data
+df = pd.DataFrame(data)
+
+# Sort DataFrame by month-year headers
+df_sorted = prepare_and_sort_df(df, month_mapping)
+
+# Check the result
+print("Sorted DataFrame:", df_sorted)
+
+
+
+
+
+import pandas as pd
+
 # Define the mapping of months to numbers
 month_mapping = {
     'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
