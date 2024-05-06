@@ -1,0 +1,57 @@
+import pandas as pd
+import xml.etree.ElementTree as ET
+
+def load_excel_data(filepath):
+    """Load configuration data from an Excel file."""
+    return pd.read_excel(filepath)
+
+def create_xml_portfolio(config_df):
+    """Create an XML structure based on configuration DataFrame."""
+    root = ET.Element('Portfolio')
+    
+    # Loop through each row in the DataFrame to construct the XML structure
+    for _, row in config_df.iterrows():
+        # Create the main object element
+        object_elem = ET.SubElement(root, 'object', attrib={
+            'type': row['Type'],
+            'version': row['Version']
+        })
+
+        # Add properties to the object
+        ET.SubElement(object_elem, 'property', attrib={
+            'name': row['PropertyName'],
+            'value': row['PropertyValue'],
+            'valueType': row['PropertyValueType']
+        })
+
+        # Assuming nested elements can exist
+        if pd.notna(row['NestedType']):
+            nested_elem = ET.SubElement(object_elem, 'object', attrib={
+                'type': row['NestedType'],
+                'version': row['NestedVersion']
+            })
+            ET.SubElement(nested_elem, 'property', attrib={
+                'name': row['NestedPropertyName'],
+                'value': row['NestedPropertyValue'],
+                'valueType': row['NestedPropertyValueType']
+            })
+
+    return root
+
+def save_xml_file(element, filename):
+    """Save the XML element to a file."""
+    tree = ET.ElementTree(element)
+    tree.write(filename, encoding='utf-8', xml_declaration=True)
+
+def main():
+    # Load configuration from Excel
+    config_df = load_excel_data('config.xlsx')
+    
+    # Create XML portfolio
+    portfolio_xml = create_xml_portfolio(config_df)
+    
+    # Save XML to a file
+    save_xml_file(portfolio_xml, 'final_portfolio.xml')
+
+if __name__ == "__main__":
+    main()
