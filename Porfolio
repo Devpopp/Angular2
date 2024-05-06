@@ -6,34 +6,35 @@ def load_excel_data(filepath):
     return pd.read_excel(filepath)
 
 def create_xml_portfolio(config_df):
-    """Create an XML structure based on configuration DataFrame."""
+    """Create an XML structure based on configuration DataFrame, including a stamp attribute."""
     root = ET.Element('Portfolio')
     
     # Loop through each row in the DataFrame to construct the XML structure
     for _, row in config_df.iterrows():
-        # Create the main object element
+        # Create the main object element with a stamp
         object_elem = ET.SubElement(root, 'object', attrib={
-            'type': row['Type'],
-            'version': row['Version']
+            'type': str(row['Type']),
+            'version': str(row['Version']),
+            'stamp': str(row['Stamp'])  # Including the stamp attribute
         })
 
-        # Add properties to the object
+        # Add properties to the object, ensuring values are strings
         ET.SubElement(object_elem, 'property', attrib={
-            'name': row['PropertyName'],
-            'value': row['PropertyValue'],
-            'valueType': row['PropertyValueType']
+            'name': str(row['PropertyName']),
+            'value': str(row['PropertyValue']),
+            'valueType': str(row['PropertyValueType'])
         })
 
-        # Assuming nested elements can exist
+        # Conditionally add nested elements if they exist
         if pd.notna(row['NestedType']):
             nested_elem = ET.SubElement(object_elem, 'object', attrib={
-                'type': row['NestedType'],
-                'version': row['NestedVersion']
+                'type': str(row['NestedType']),
+                'version': str(row['NestedVersion'])
             })
             ET.SubElement(nested_elem, 'property', attrib={
-                'name': row['NestedPropertyName'],
-                'value': row['NestedPropertyValue'],
-                'valueType': row['NestedPropertyValueType']
+                'name': str(row['NestedPropertyName']),
+                'value': str(row['NestedPropertyValue']),
+                'valueType': str(row['NestedPropertyValueType'])
             })
 
     return root
