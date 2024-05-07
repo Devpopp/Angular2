@@ -1,46 +1,100 @@
-import pandas as pd
+Inside your Python project directory, create a new Python file app.py.
+Set up a basic Flask app:
+python
+Copy code
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-def prepare_and_sort_df(df, month_mapping):
-    # Define the custom sorting function
-    def custom_sort(col):
-        parts = col.split('-')
-        if len(parts) == 2 and parts[0] in month_mapping:
-            month_number = month_mapping[parts[0]]
-            year = int(parts[1])
-            return (year, month_number)
-        return (float('inf'), 0)  # Keep non-date columns at the end
+app = Flask(__name__)
+CORS(app)  # Enable CORS
 
-    # Separate fixed and date columns
-    fixed_columns = df.columns[:6].tolist()  # Assuming the first 6 columns are fixed
-    date_columns = df.columns[6:].tolist()
+@app.route('/api/ask', methods=['POST'])
+def ask():
+    question = request.json.get('question')
+    # Placeholder for processing the question
+    answer = {"response": "This is a sample answer to " + question}
+    return jsonify(answer)
 
-    # Sort the date columns
-    sorted_date_columns = sorted(date_columns, key=custom_sort)
+if __name__ == "__main__":
+    app.run(debug=True)
+2.2 Test API
 
-    # Combine the fixed and sorted date columns
-    final_columns_order = fixed_columns + sorted_date_columns
+Run the Flask app:
+bash
+Copy code
+python app.py
+Use a tool like Postman to test the API by sending a POST request to http://localhost:5000/api/ask with a JSON body such as {"question": "What is Flask?"}.
+Step 3: Frontend Development (Angular)
+3.1 Modify Angular Service
 
-    # Reindex the DataFrame with the new column order
-    df = df.reindex(columns=final_columns_order)
-    return df
+Inside the Angular project, generate a service for API calls:
+bash
+Copy code
+ng generate service api
+Modify the generated api.service.ts to connect to your Flask API:
+typescript
+Copy code
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-# Example data and month mapping
-month_mapping = {
-    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+  private apiUrl = 'http://localhost:5000/api/ask';  // Flask API URL
+
+  constructor(private http: HttpClient) { }
+
+  askQuestion(question: string): Observable<any> {
+    return this.http.post<any>(this.apiUrl, { question });
+  }
 }
+3.2 Modify Angular Component
 
-# Assuming 'data' is your DataFrame loaded here
-data = {
-    # Include your actual DataFrame data
+Modify the main component (e.g., app.component.ts) to use the ApiService to send questions and display answers:
+typescript
+Copy code
+import { Component } from '@angular/core';
+import { ApiService } from './api.service';
+
+@Component({
+  selector: 'app-root',
+  template: `
+    <div>
+      <input [(ngModel)]="question" type="text" placeholder="Ask a question...">
+      <button (click)="askQuestion()">Ask</button>
+      <p>Answer: {{ answer }}</p>
+    </div>
+  `,
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  question: string;
+  answer: string;
+
+  constructor(private apiService: ApiService) {}
+
+  askQuestion() {
+    this.apiService.askQuestion(this.question).subscribe(data => {
+      this.answer = data.response;
+    });
+  }
 }
+You'll need to add FormsModule to your app module to use ngModel.
+Step 4: Running and Testing the Full Application
+4.1 Run the Flask Backend
 
-df = pd.DataFrame(data)
-df_sorted = prepare_and_sort_df(df, month_mapping)
-print(df_sorted)
+Ensure your Flask app is running as described in step 2.2.
+4.2 Run the Angular Frontend
+
+Ensure your Angular app is running and accessible at `
 
 
 
-# Process and sort DataFrame
-df_sorted = prepare_and_sort_df(df)
-print(df_sorted)
+
+
+
+
+
+ChatGPT can make mistakes. Con
