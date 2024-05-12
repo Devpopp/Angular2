@@ -1,30 +1,38 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-from bs4 import BeautifulSoup
+.icon {
+    width: 24px; /* Set your required size */
+    height: 24px;
+    display: inline-block;
+    background-color: #FFFFFF; /* Default color */
+    -webkit-mask-size: cover;
+    mask-size: cover;
+}
 
-app = Flask(__name__)
-CORS(app)
+/* Example specific icons */
+.icon-dashboard {
+    -webkit-mask-image: url('/path/to/dashboard-icon.png');
+    mask-image: url('/path/to/dashboard-icon.png');
+}
 
-@app.route('/api/ask', methods=['POST'])
-def ask():
-    data = request.json
-    question = data.get('question', 'default question')
-    try:
-        # Fetch and parse the content from the URL
-        response = requests.get('https://example.com/documentation')
-        soup = BeautifulSoup(response.text, 'html.parser')
+.icon-settings {
+    -webkit-mask-image: url('/path/to/settings-icon.png');
+    mask-image: url('/path/to/settings-icon.png');
+}
 
-        # Example: Search for paragraphs that contain the question text
-        results = soup.find_all('p', string=lambda text: question.lower() in text.lower())
+/* Hover and active states for all icons */
+.side-menubar li:hover .icon,
+.side-menubar li.active .icon {
+    background-color: #2596be; /* Color change on hover/active */
+}
 
-        # Just a simple example to return the first match
-        answer = results[0].text if results else "No answer found"
-        response_data = {"response": answer}
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-    return jsonify(response_data)
+<li>
+    <div class="icon icon-dashboard"></div>
+    <span class="nav-text">Dashboard</span>
+</li>
+<li>
+    <div class="icon icon-settings"></div>
+    <span class="nav-text">Settings</span>
+</li>
 
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+
+
