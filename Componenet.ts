@@ -1,38 +1,22 @@
-.icon {
-    width: 24px; /* Set your required size */
-    height: 24px;
-    display: inline-block;
-    background-color: #FFFFFF; /* Default color */
-    -webkit-mask-size: cover;
-    mask-size: cover;
+// src/app/app.component.ts
+import { HttpClient } from '@angular/common/http';
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  template: `<h1>{{ title }}</h1>
+             <button (click)="fetchData()">Fetch Data</button>`
+})
+export class AppComponent {
+  title = 'frontend';
+
+  constructor(private http: HttpClient) {}
+
+  fetchData() {
+    this.http.get('/api').subscribe(data => {
+      console.log(data);
+    });
+  }
 }
-
-/* Example specific icons */
-.icon-dashboard {
-    -webkit-mask-image: url('/path/to/dashboard-icon.png');
-    mask-image: url('/path/to/dashboard-icon.png');
-}
-
-.icon-settings {
-    -webkit-mask-image: url('/path/to/settings-icon.png');
-    mask-image: url('/path/to/settings-icon.png');
-}
-
-/* Hover and active states for all icons */
-.side-menubar li:hover .icon,
-.side-menubar li.active .icon {
-    background-color: #2596be; /* Color change on hover/active */
-}
-
-
-<li>
-    <div class="icon icon-dashboard"></div>
-    <span class="nav-text">Dashboard</span>
-</li>
-<li>
-    <div class="icon icon-settings"></div>
-    <span class="nav-text">Settings</span>
-</li>
-
 
 
