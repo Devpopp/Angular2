@@ -1,0 +1,148 @@
+import os
+import datetime as dt
+import pandas as pd
+from shutil import make_archive as archive
+import uuid
+
+# Set up paths
+timestamp = str(dt.datetime.now().strftime('%Y%m%d_%H%M_%S'))
+V_PATH = os.path.dirname(os.path.abspath(__file__)) + os.sep
+dataPath = V_PATH + 'data' + os.sep
+portfolioPath = V_PATH + 'portfolio' + os.sep
+excelPath = portfolioPath + 'excel' + os.sep
+xmlPath = portfolioPath + 'xml' + os.sep
+zipPath = portfolioPath + 'zip' + os.sep
+archivePath = portfolioPath + 'archive' + os.sep
+
+# Ensure necessary directories exist
+os.makedirs(excelPath, exist_ok=True)
+os.makedirs(xmlPath, exist_ok=True)
+os.makedirs(zipPath, exist_ok=True)
+os.makedirs(archivePath, exist_ok=True)
+
+# Specify the manual path to the config file
+config_file_path = 'C:/path/to/your/config_file.xlsx'
+
+def load_config(config_file_path):
+    try:
+        config_df = pd.read_excel(config_file_path, sheet_name='config')
+    except FileNotFoundError:
+        raise Exception(f"Config file not found at the specified path: {config_file_path}")
+    except ValueError as e:
+        raise Exception(f"Error reading the Excel file: {e}")
+    return config_df
+
+# Load configuration
+config_df = load_config(config_file_path)
+V_EXCEL = config_df['DPM_excel'][0]
+MES_SH = config_df['MES_sheet'][0]
+owner = config_df['owner'][8]
+stamp = config_df['stamp'][0]
+branchId = config_df['branchId'][0]
+
+# Archive old XML files
+archive(archivePath + timestamp, 'zip', xmlPath)
+
+# Clean up old files
+if os.path.isfile(excelPath + 'portfolio.xlsx'):
+    os.remove(excelPath + 'portfolio.xlsx')
+for f in os.listdir(xmlPath):
+    os.remove(xmlPath + f)
+
+def create_portfolio():
+    """Create a zipped XML of portfolio data"""
+    df_orig = pd.read_excel(dataPath + V_EXCEL, sheet_name=MES_SH, header=0)
+    df_orig['Owner'] = owner
+    df_orig['Period type'] = 'instant'
+
+    # Filter and prepare data
+    df_orig = df_orig[df_orig['DomainCode'].isin(['AT'])]
+    data_col = ['Label', 'Code', 'Description', 'Owner', 'Data type', 'Period type', 'ParentCode', 'branchId', 'stamp']
+    df_data = df_orig[['MemberLabel', 'MemberCode', 'Description', 'Owner', 'DataType', 'Period type', 'ParentCode', 'branchId', 'stamp']].copy()
+    df_data.columns = data_col
+    df_data['Data type'] = df_data['Data type'].apply(lambda x: ''.join(x.split('[')[:1]))
+    df_data.fillna('', inplace=True)
+
+    # Save to Excel
+    with pd.ExcelWriter(excelPath + 'portfolio.xlsx', engine='openpyxl', mode='w') as writer:
+        df_data.to_excel(writer, sheet_name='Data', index=False)
+
+    print('Excel file for portfolio extract is created.')
+
+    # Generate XML files
+    Main_df = pd.read_excel(excelPath + 'portfolio.xlsx', sheet_name='Data')
+    for ind in Main_df.index:
+        create_xml_file(Main_df, ind)
+
+    print("XML files created for portfolio.")
+
+    # Archive XML files
+    archive(zipPath + 'portfolio', 'zip', xmlPath)
+    print('Ready-to-import zip file is created for portfolio XML files.')
+
+def create_xml_file(df, index):
+    unique_id = str(uuid.uuid4())
+    with open(xmlPath + df['Code'][index] + '.xml', 'w') as fw:
+        fw.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        fw.write('<Portfolio>\n')
+        fw.write(f'  <object type="Portfolio" version="11" id="{unique_id}">\n')
+        fw.write(f'    <property name="name" value="{df["Code"][index]}" valueType="string"/>\n')
+        description = str(df['Description'][index]) if str(df['Description'][index]) != "nan" else str(df['Label'][index])
+        fw.write(f'    <property name="description" value="{description}" valueType="string"/>\n')
+        fw.write(f'    <property name="objectId" value="{unique_id}" valueType="string"/>\n')
+        fw.write(f'    <property name="branchId" value="{df["branchId"][index]}" valueType="string"/>\n')
+        fw.write(f'    <property name="comment" value="" valueType="string"/>\n')
+        fw.write(f'    <property name="longName" value="{str(df["Label"][index])}" valueType="string"/>\n')
+        fw.write(f'    <property name="xbrlMeasureId" value="ebo_met:{df["Code"][index]}" valueType="string"/>\n')
+        fw.write(f'    <property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
+        fw.write(f'    <property name="measureType" value="{ "ENUMERATOR" if str.lower(df["Data type"][index]) == "enumeration" else "NATIVE" }" valueType="string"/>\n')
+        if str.lower(df['Data type'][index]) in ["monetary", "enumeration"]:
+            fw.write(f'    <property name="valueType" value="Monetary" valueType="string"/>\n')
+        fw.write(f'    <property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
+        fw.write(f'    <property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
+        fw.write(f'    <property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
+        if str.lower(df['Data type'][index]) != "enumeration":
+            fw.write(f'    <property name="displayFormat" value="#,###.00" valueType="string"/>\n')
+            fw.write(f'    <property name="submissionFormat" value="0.0###" valueType="string"/>\n')
+        fw.write(f'    <property name="periodType" value="{ "DURATION" if df["Period type"][index] == "duration" else "INSTANT" }" valueType="string"/>\n')
+        fw.write('    <property name="alternateDisplayFormats" valueType="table"/>\n')
+        # Add hierarchical conditions
+        add_hierarchy(df, index, fw)
+        fw.write('  </object>\n')
+        fw.write('</Portfolio>\n')
+
+def add_hierarchy(df, index, fw):
+    if 'ParentCode' in df.columns and pd.notna(df['ParentCode'][index]) and df['ParentCode'][index]:
+        parent_code = df['ParentCode'][index]
+        fw.write(f'  <property name="parentCode" value="{parent_code}" valueType="string"/>\n')
+        child_df = df[df['ParentCode'] == parent_code]
+        for child_index in child_df.index:
+            unique_id = str(uuid.uuid4())
+            fw.write('  <object type="Portfolio">\n')
+            fw.write(f'    <property name="name" value="{child_df["Code"][child_index]}" valueType="string"/>\n')
+            description = str(child_df['Description'][child_index]) if str(child_df['Description'][child_index]) != "nan" else str(child_df['Label
+            description = str(child_df['Description'][child_index]) if str(child_df['Description'][child_index]) != "nan" else str(child_df['Label'][child_index])
+            fw.write(f'    <property name="description" value="{description}" valueType="string"/>\n')
+            fw.write(f'    <property name="objectId" value="{unique_id}" valueType="string"/>\n')
+            fw.write(f'    <property name="branchId" value="{child_df["branchId"][child_index]}" valueType="string"/>\n')
+            fw.write(f'    <property name="comment" value="" valueType="string"/>\n')
+            fw.write(f'    <property name="longName" value="{str(child_df["Label"][child_index])}" valueType="string"/>\n')
+            fw.write(f'    <property name="xbrlMeasureId" value="ebo_met:{child_df["Code"][child_index]}" valueType="string"/>\n')
+            fw.write(f'    <property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
+            fw.write(f'    <property name="measureType" value="{ "ENUMERATOR" if str.lower(child_df["Data type"][child_index]) == "enumeration" else "NATIVE" }" valueType="string"/>\n')
+            if str.lower(child_df['Data type'][child_index]) in ["monetary", "enumeration"]:
+                fw.write(f'    <property name="valueType" value="Monetary" valueType="string"/>\n')
+            fw.write(f'    <property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
+            fw.write(f'    <property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
+            fw.write(f'    <property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
+            if str.lower(child_df['Data type'][child_index]) != "enumeration":
+                fw.write(f'    <property name="displayFormat" value="#,###.00" valueType="string"/>\n')
+                fw.write(f'    <property name="submissionFormat" value="0.0###" valueType="string"/>\n')
+            fw.write(f'    <property name="periodType" value="{ "DURATION" if child_df["Period type"][child_index] == "duration" else "INSTANT" }" valueType="string"/>\n')
+            fw.write('    <property name="alternateDisplayFormats" valueType="table"/>\n')
+            fw.write('  </object>\n')
+
+if __name__ == "__main__":
+    create_portfolio()
+    print('Archive file name for previous run is', timestamp + '.zip')
+
