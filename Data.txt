@@ -19,9 +19,12 @@ def is_unwanted(filename):
         r'\bbkp\b',                # exactly "bkp"
         r'\btest\b',               # exactly "test"
         r'\bCH\d+\b',              # "CH" followed by any number of digits
-        r'bkp\d*',                 # "bkp" followed by any number of characters
-        r'test\d*',                # "test" followed by any number of characters
-        r'CH\d+'                   # "CH" followed by digits
+        r'\bbkp\d*\b',             # "bkp" followed by any number of characters
+        r'\btest\d*\b',            # "test" followed by any number of characters
+        r'\bCH\d+',                # "CH" followed by digits
+        r'\d',                     # any single digit
+        r'\.',                     # any period
+        r'/',                      # any forward slash
     ]
     for pattern in unwanted_patterns:
         if re.search(pattern, filename, re.IGNORECASE):
