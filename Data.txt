@@ -1,148 +1,85 @@
 import os
-import datetime as dt
-import pandas as pd
-from shutil import make_archive as archive
-import uuid
+import re
 
-# Set up paths
-timestamp = str(dt.datetime.now().strftime('%Y%m%d_%H%M_%S'))
-V_PATH = os.path.dirname(os.path.abspath(__file__)) + os.sep
-dataPath = V_PATH + 'data' + os.sep
-portfolioPath = V_PATH + 'portfolio' + os.sep
-excelPath = portfolioPath + 'excel' + os.sep
-xmlPath = portfolioPath + 'xml' + os.sep
-zipPath = portfolioPath + 'zip' + os.sep
-archivePath = portfolioPath + 'archive' + os.sep
+# Path of the first file
+file1_path = "SourceHash_Report.txt"
 
-# Ensure necessary directories exist
-os.makedirs(excelPath, exist_ok=True)
-os.makedirs(xmlPath, exist_ok=True)
-os.makedirs(zipPath, exist_ok=True)
-os.makedirs(archivePath, exist_ok=True)
+# Path of the second file
+file2_path = "DestinationHash_Report.txt"
 
-# Specify the manual path to the config file
-config_file_path = 'C:/path/to/your/config_file.xlsx'
+# Output file path
+output_file_path = "Comparison_Result.txt"
 
-def load_config(config_file_path):
+# Unwanted file path
+unwanted_file_path = "unwanted.txt"
+
+# Function to check if a file is unwanted
+def is_unwanted(filename):
+    unwanted_patterns = [
+        r'\bbkp\b',                # exactly "bkp"
+        r'\btest\b',               # exactly "test"
+        r'\bCH\d+\b',              # "CH" followed by any number of digits
+        r'bkp\d*',                 # "bkp" followed by any number of characters
+        r'test\d*',                # "test" followed by any number of characters
+        r'CH\d+'                   # "CH" followed by digits
+    ]
+    for pattern in unwanted_patterns:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return True
+    return False
+
+# Read hashcodes and file names from the first file
+file1_hashes = {}
+with open(file1_path, "r") as file1, open(unwanted_file_path, "w") as unwanted_file:
+    for line in file1:
+        line_parts = line.strip().split()
+        if len(line_parts) < 2:
+            continue
+        filename, hashcode = line_parts[-2], line_parts[-1]
+        if is_unwanted(filename.strip()):
+            unwanted_file.write(filename + "\n")
+            continue
+        if filename.strip() == "EMPTY_FILE":
+            hashcode = "EMPTY_FILE_HASH"
+        file1_hashes[hashcode] = os.path.splitext(os.path.basename(filename))[0]
+
+# Read hashcodes and file names from the second file
+file2_hashes = {}
+with open(file2_path, "r") as file2, open(unwanted_file_path, "a") as unwanted_file:
+    for line in file2:
+        line_parts = line.strip().split()
+        if len(line_parts) < 2:
+            continue
+        filename, hashcode = line_parts[-2], line_parts[-1]
+        if is_unwanted(filename.strip()):
+            unwanted_file.write(filename + "\n")
+            continue
+        if filename.strip() == "EMPTY_FILE":
+            hashcode = "EMPTY_FILE_HASH"
+        file2_hashes[hashcode] = os.path.splitext(os.path.basename(filename))[0]
+
+# Find the common hashcodes with same filename (excluding extension) and hashcode in both files
+common_hashes = set()
+for hashcode in file1_hashes.keys():
+    if hashcode in file2_hashes.keys() and file1_hashes[hashcode] == file2_hashes[hashcode]:
+        common_hashes.add(hashcode)
+
+# Find the hashcodes unique to each file
+unique_to_file1 = set(file1_hashes.keys()).difference(common_hashes)
+unique_to_file2 = set(file2_hashes.keys()).difference(common_hashes)
+
+# Write the results to output file
+with open(output_file_path, "w") as output_file:
+    for hashcode in unique_to_file1:
+        output_file.write(f"{file1_hashes[hashcode]}\n")
+
+    # Check the pre-existence of file2_hashes in comparison.txt file
     try:
-        config_df = pd.read_excel(config_file_path, sheet_name='config')
+        with open(output_file_path, "r") as file_content_output_file:
+            if hashcode in file_content_output_file.read():
+                print('Present in output file')
     except FileNotFoundError:
-        raise Exception(f"Config file not found at the specified path: {config_file_path}")
-    except ValueError as e:
-        raise Exception(f"Error reading the Excel file: {e}")
-    return config_df
+        pass
 
-# Load configuration
-config_df = load_config(config_file_path)
-V_EXCEL = config_df['DPM_excel'][0]
-MES_SH = config_df['MES_sheet'][0]
-owner = config_df['owner'][8]
-stamp = config_df['stamp'][0]
-branchId = config_df['branchId'][0]
-
-# Archive old XML files
-archive(archivePath + timestamp, 'zip', xmlPath)
-
-# Clean up old files
-if os.path.isfile(excelPath + 'portfolio.xlsx'):
-    os.remove(excelPath + 'portfolio.xlsx')
-for f in os.listdir(xmlPath):
-    os.remove(xmlPath + f)
-
-def create_portfolio():
-    """Create a zipped XML of portfolio data"""
-    df_orig = pd.read_excel(dataPath + V_EXCEL, sheet_name=MES_SH, header=0)
-    df_orig['Owner'] = owner
-    df_orig['Period type'] = 'instant'
-
-    # Filter and prepare data
-    df_orig = df_orig[df_orig['DomainCode'].isin(['AT'])]
-    data_col = ['Label', 'Code', 'Description', 'Owner', 'Data type', 'Period type', 'ParentCode', 'branchId', 'stamp']
-    df_data = df_orig[['MemberLabel', 'MemberCode', 'Description', 'Owner', 'DataType', 'Period type', 'ParentCode', 'branchId', 'stamp']].copy()
-    df_data.columns = data_col
-    df_data['Data type'] = df_data['Data type'].apply(lambda x: ''.join(x.split('[')[:1]))
-    df_data.fillna('', inplace=True)
-
-    # Save to Excel
-    with pd.ExcelWriter(excelPath + 'portfolio.xlsx', engine='openpyxl', mode='w') as writer:
-        df_data.to_excel(writer, sheet_name='Data', index=False)
-
-    print('Excel file for portfolio extract is created.')
-
-    # Generate XML files
-    Main_df = pd.read_excel(excelPath + 'portfolio.xlsx', sheet_name='Data')
-    for ind in Main_df.index:
-        create_xml_file(Main_df, ind)
-
-    print("XML files created for portfolio.")
-
-    # Archive XML files
-    archive(zipPath + 'portfolio', 'zip', xmlPath)
-    print('Ready-to-import zip file is created for portfolio XML files.')
-
-def create_xml_file(df, index):
-    unique_id = str(uuid.uuid4())
-    with open(xmlPath + df['Code'][index] + '.xml', 'w') as fw:
-        fw.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        fw.write('<Portfolio>\n')
-        fw.write(f'  <object type="Portfolio" version="11" id="{unique_id}">\n')
-        fw.write(f'    <property name="name" value="{df["Code"][index]}" valueType="string"/>\n')
-        description = str(df['Description'][index]) if str(df['Description'][index]) != "nan" else str(df['Label'][index])
-        fw.write(f'    <property name="description" value="{description}" valueType="string"/>\n')
-        fw.write(f'    <property name="objectId" value="{unique_id}" valueType="string"/>\n')
-        fw.write(f'    <property name="branchId" value="{df["branchId"][index]}" valueType="string"/>\n')
-        fw.write(f'    <property name="comment" value="" valueType="string"/>\n')
-        fw.write(f'    <property name="longName" value="{str(df["Label"][index])}" valueType="string"/>\n')
-        fw.write(f'    <property name="xbrlMeasureId" value="ebo_met:{df["Code"][index]}" valueType="string"/>\n')
-        fw.write(f'    <property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
-        fw.write(f'    <property name="measureType" value="{ "ENUMERATOR" if str.lower(df["Data type"][index]) == "enumeration" else "NATIVE" }" valueType="string"/>\n')
-        if str.lower(df['Data type'][index]) in ["monetary", "enumeration"]:
-            fw.write(f'    <property name="valueType" value="Monetary" valueType="string"/>\n')
-        fw.write(f'    <property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
-        fw.write(f'    <property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
-        fw.write(f'    <property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
-        if str.lower(df['Data type'][index]) != "enumeration":
-            fw.write(f'    <property name="displayFormat" value="#,###.00" valueType="string"/>\n')
-            fw.write(f'    <property name="submissionFormat" value="0.0###" valueType="string"/>\n')
-        fw.write(f'    <property name="periodType" value="{ "DURATION" if df["Period type"][index] == "duration" else "INSTANT" }" valueType="string"/>\n')
-        fw.write('    <property name="alternateDisplayFormats" valueType="table"/>\n')
-        # Add hierarchical conditions
-        add_hierarchy(df, index, fw)
-        fw.write('  </object>\n')
-        fw.write('</Portfolio>\n')
-
-def add_hierarchy(df, index, fw):
-    if 'ParentCode' in df.columns and pd.notna(df['ParentCode'][index]) and df['ParentCode'][index]:
-        parent_code = df['ParentCode'][index]
-        fw.write(f'  <property name="parentCode" value="{parent_code}" valueType="string"/>\n')
-        child_df = df[df['ParentCode'] == parent_code]
-        for child_index in child_df.index:
-            unique_id = str(uuid.uuid4())
-            fw.write('  <object type="Portfolio">\n')
-            fw.write(f'    <property name="name" value="{child_df["Code"][child_index]}" valueType="string"/>\n')
-            description = str(child_df['Description'][child_index]) if str(child_df['Description'][child_index]) != "nan" else str(child_df['Label
-            description = str(child_df['Description'][child_index]) if str(child_df['Description'][child_index]) != "nan" else str(child_df['Label'][child_index])
-            fw.write(f'    <property name="description" value="{description}" valueType="string"/>\n')
-            fw.write(f'    <property name="objectId" value="{unique_id}" valueType="string"/>\n')
-            fw.write(f'    <property name="branchId" value="{child_df["branchId"][child_index]}" valueType="string"/>\n')
-            fw.write(f'    <property name="comment" value="" valueType="string"/>\n')
-            fw.write(f'    <property name="longName" value="{str(child_df["Label"][child_index])}" valueType="string"/>\n')
-            fw.write(f'    <property name="xbrlMeasureId" value="ebo_met:{child_df["Code"][child_index]}" valueType="string"/>\n')
-            fw.write(f'    <property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
-            fw.write(f'    <property name="measureType" value="{ "ENUMERATOR" if str.lower(child_df["Data type"][child_index]) == "enumeration" else "NATIVE" }" valueType="string"/>\n')
-            if str.lower(child_df['Data type'][child_index]) in ["monetary", "enumeration"]:
-                fw.write(f'    <property name="valueType" value="Monetary" valueType="string"/>\n')
-            fw.write(f'    <property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
-            fw.write(f'    <property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
-            fw.write(f'    <property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
-            if str.lower(child_df['Data type'][child_index]) != "enumeration":
-                fw.write(f'    <property name="displayFormat" value="#,###.00" valueType="string"/>\n')
-                fw.write(f'    <property name="submissionFormat" value="0.0###" valueType="string"/>\n')
-            fw.write(f'    <property name="periodType" value="{ "DURATION" if child_df["Period type"][child_index] == "duration" else "INSTANT" }" valueType="string"/>\n')
-            fw.write('    <property name="alternateDisplayFormats" valueType="table"/>\n')
-            fw.write('  </object>\n')
-
-if __name__ == "__main__":
-    create_portfolio()
-    print('Archive file name for previous run is', timestamp + '.zip')
-
+    for hashcode in unique_to_file2:
+        output_file.write(f"{file2_hashes[hashcode]}\n")
