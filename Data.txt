@@ -16,15 +16,12 @@ unwanted_file_path = "unwanted.txt"
 # Function to check if a file is unwanted
 def is_unwanted(filename):
     unwanted_patterns = [
-        r'\bbkp\b',                # exactly "bkp"
-        r'\btest\b',               # exactly "test"
-        r'\bCH\d+\b',              # "CH" followed by any number of digits
-        r'\bbkp\d*\b',             # "bkp" followed by any number of characters
-        r'\btest\d*\b',            # "test" followed by any number of characters
-        r'\bCH\d+',                # "CH" followed by digits
-        r'\d',                     # any single digit
-        r'\.',                     # any period
-        r'/',                      # any forward slash
+        r'bkp',               # "bkp" anywhere in the filename
+        r'test',              # "test" anywhere in the filename
+        r'CH\d+',             # "CH" followed by any number of digits
+        r'\d',                # any single digit
+        r'\.',                # any period
+        r'/'                  # any forward slash
     ]
     for pattern in unwanted_patterns:
         if re.search(pattern, filename, re.IGNORECASE):
@@ -73,16 +70,13 @@ unique_to_file2 = set(file2_hashes.keys()).difference(common_hashes)
 
 # Write the results to output file
 with open(output_file_path, "w") as output_file:
-    for hashcode in unique_to_file1:
+    for hashcode in file1_hashes.keys():
+        if hashcode not in common_hashes and hashcode not in unique_to_file2:
+            output_file.write(f"{file1_hashes[hashcode]}\n")
+
+    for hashcode in file2_hashes.keys():
+        if hashcode not in common_hashes and hashcode not in unique_to_file1:
+            output_file.write(f"{file2_hashes[hashcode]}\n")
+
+    for hashcode in common_hashes:
         output_file.write(f"{file1_hashes[hashcode]}\n")
-
-    # Check the pre-existence of file2_hashes in comparison.txt file
-    try:
-        with open(output_file_path, "r") as file_content_output_file:
-            if hashcode in file_content_output_file.read():
-                print('Present in output file')
-    except FileNotFoundError:
-        pass
-
-    for hashcode in unique_to_file2:
-        output_file.write(f"{file2_hashes[hashcode]}\n")
