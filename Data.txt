@@ -1,8 +1,3 @@
-To generate XML similar to the format in image 1, you can use Python's `xml.etree.ElementTree` to create a more structured and detailed XML file. Here's an example script that reads from an Excel file and creates XML with nested elements as shown in image 1.
-
-### Example Python Script
-
-```python
 import pandas as pd
 from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 
@@ -12,19 +7,25 @@ df = pd.read_excel('portfolio_data.xlsx')
 # Function to create XML elements from DataFrame row
 def create_xml_element(row):
     object_element = Element('object')
-    object_element.set('stamp', str(row['Stamp']))
     object_element.set('type', row['Type'])
     object_element.set('version', str(row['Version']))
 
+    # Adding properties
     for col in df.columns:
-        if col not in ['Stamp', 'Type', 'Version']:
+        if col not in ['Type', 'Version', 'Parent ID', 'Condition Type', 'Grouping Operator', 'Condition Value']:
             if pd.isna(row[col]):
                 continue
             property_element = SubElement(object_element, 'property')
-            property_element.set('name', col)
+            property_element.set('name', col.replace(' ', ''))
             property_element.set('value', str(row[col]))
-            # Optional: Set valueType if needed
             property_element.set('valueType', determine_value_type(row[col]))
+
+    # Adding conditions
+    if 'Condition Type' in row and pd.notna(row['Condition Type']):
+        condition_element = SubElement(object_element, 'condition')
+        condition_element.set('type', row['Condition Type'])
+        condition_element.set('operator', row['Grouping Operator'])
+        condition_element.text = str(row['Condition Value'])
 
     return object_element
 
@@ -39,35 +40,35 @@ def determine_value_type(value):
     else:
         return 'string'
 
+# Create a mapping of parent-child relationships
+def build_hierarchy(df):
+    hierarchy = {}
+    for index, row in df.iterrows():
+        parent_id = row['Parent ID']
+        if parent_id not in hierarchy:
+            hierarchy[parent_id] = []
+        hierarchy[parent_id].append(row)
+    return hierarchy
+
+# Recursively build XML structure
+def add_children(parent, hierarchy, parent_id):
+    if parent_id in hierarchy:
+        for row in hierarchy[parent_id]:
+            child_element = create_xml_element(row)
+            parent.append(child_element)
+            add_children(child_element, hierarchy, row['Name'])
+
 # Create the root element
 root = Element('root')
 
-# Iterate through each row and add to root
-for index, row in df.iterrows():
-    object_element = create_xml_element(row)
-    root.append(object_element)
+# Build the hierarchy from the DataFrame
+hierarchy = build_hierarchy(df)
+
+# Add children to the root based on the hierarchy
+add_children(root, hierarchy, 'root')
 
 # Save XML to file
 tree = ElementTree(root)
 tree.write('output.xml', encoding='utf-8', xml_declaration=True)
 
-print("XML file created successfully!")
-```
-
-### Example Data in Excel (`portfolio_data.xlsx`)
-
-Here is an example of how your Excel file might look, considering the columns discussed earlier:
-
-| Stamp | Type | Object ID | Branch ID | Name | Description | Version | Value | Value Type | Data Source | Model Name | Data Model | Additional Indices | Clustered | Unique | Fields | Distribution Style | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Portfolio Result Alias | Hierarchy | Root Node |
-|-------|------|-----------|-----------|------|-------------|---------|-------|------------|-------------|------------|------------|--------------------|-----------|--------|--------|--------------------|---------|------------|---------------|-------------|-------------------|------|--------------|----------------|----------------|------------------|------------------|--------------------|----------------|----------|----------|
-| abc123| Portfolio | id123 | branch1 | AD | Analysis of deposits | 5.0 | value1 | string | source1 | model1 | data_model1 | index1 | False | True | field1 | style1 | level1 | Level Name | default | True | False | 10 | lookup1 | type1 | tree1 | AND | rule1 | rule2 | alias1 | hierarchy1 | root1 |
-
-This script and the Excel file format should help you generate XML that matches the structure shown in image 1. Ensure you have the necessary columns in your Excel file and update the script if you need to handle more specific nested elements or structures.
-
-### Notes
-
-1. **XML Structure**: The script creates an XML file with nested properties, matching the hierarchical structure seen in your example.
-2. **Customization**: Adjust the script based on the exact structure and additional elements you need.
-3. **Value Type**: The script includes a simple function to determine the value type; customize it if more specific types are needed.
-
-Feel free to modify this script based on the specific XML structure and content you need!
+print("XML file with hierarchical conditions created successfully!")
