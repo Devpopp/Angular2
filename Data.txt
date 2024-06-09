@@ -1,48 +1,6 @@
-Given your additional requirement, you should add the `stamp` and `type` columns as the first columns in your XLSX sheet. Here is the updated structure for your Excel sheet:
+To generate XML similar to the format in image 1, you can use Python's `xml.etree.ElementTree` to create a more structured and detailed XML file. Here's an example script that reads from an Excel file and creates XML with nested elements as shown in image 1.
 
-### Updated XLSX Sheet Layout
-
-| Stamp | Type | Object ID | Branch ID | Name | Description | Version | Value | Value Type | Data Source | Model Name | Data Model | Additional Indices | Clustered | Unique | Fields | Distribution Style | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Portfolio Result Alias | Hierarchy | Root Node |
-|-------|------|-----------|-----------|------|-------------|---------|-------|------------|-------------|------------|------------|--------------------|-----------|--------|--------|--------------------|---------|------------|---------------|-------------|-------------------|------|--------------|----------------|----------------|------------------|------------------|--------------------|----------------|----------|----------|
-
-### Explanation of Columns:
-
-1. **Stamp**: The unique stamp for the object, typically representing a timestamp or unique identifier.
-2. **Type**: The type of the object, such as "Portfolio" or any other relevant type.
-3. **Object ID**: A unique identifier for the object.
-4. **Branch ID**: The identifier for the specific branch.
-5. **Name**: The name of the object or field.
-6. **Description**: A descriptive field explaining the object.
-7. **Version**: The version of the object.
-8. **Value**: The value of the property.
-9. **Value Type**: The type of the value, e.g., string, boolean.
-10. **Data Source**: The source of the data, often a URL or database reference.
-11. **Model Name**: The name of the model associated with the object.
-12. **Data Model**: Reference to the data model.
-13. **Additional Indices**: Any additional indices related to the object.
-14. **Clustered**: Indicates whether the index is clustered.
-15. **Unique**: Indicates whether the value or index must be unique.
-16. **Fields**: Specific fields associated with the object.
-17. **Distribution Style**: The style of data distribution.
-18. **Level ID**: The identifier for different levels.
-19. **Level Name**: The name of each level.
-20. **Default Value**: The default value for the property.
-21. **Allow Nulls**: Indicates if null values are allowed.
-22. **Allow Nulls Fixed**: Specifies if null values are fixed.
-23. **Size**: The size of the data or field.
-24. **Lookup Source**: The source for lookup values.
-25. **Condition Type**: The type of condition for data filtering.
-26. **Condition Tree**: A tree structure defining the condition logic.
-27. **Grouping Operator**: The operator used for grouping conditions.
-28. **Instance Key Rules**: Rules for instance keys.
-29. **Instance Selection Rule**: Rules for selecting instances.
-30. **Portfolio Result Alias**: An alias for portfolio results.
-31. **Hierarchy**: The hierarchical structure of the object.
-32. **Root Node**: The root node of the hierarchy.
-
-### Python Script Example
-
-You can use a Python script to read from this XLSX file and generate the corresponding XML. Here’s a simplified example of how you might do it:
+### Example Python Script
 
 ```python
 import pandas as pd
@@ -51,22 +9,40 @@ from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 # Load data from XLSX
 df = pd.read_excel('portfolio_data.xlsx')
 
+# Function to create XML elements from DataFrame row
 def create_xml_element(row):
     object_element = Element('object')
     object_element.set('stamp', str(row['Stamp']))
     object_element.set('type', row['Type'])
-    
+    object_element.set('version', str(row['Version']))
+
     for col in df.columns:
-        if col not in ['Stamp', 'Type']:
+        if col not in ['Stamp', 'Type', 'Version']:
+            if pd.isna(row[col]):
+                continue
             property_element = SubElement(object_element, 'property')
             property_element.set('name', col)
             property_element.set('value', str(row[col]))
+            # Optional: Set valueType if needed
+            property_element.set('valueType', determine_value_type(row[col]))
 
     return object_element
 
-root = Element('root')  # Create root element
+# Function to determine value type (optional)
+def determine_value_type(value):
+    if isinstance(value, bool):
+        return 'boolean'
+    elif isinstance(value, int):
+        return 'integer'
+    elif isinstance(value, float):
+        return 'float'
+    else:
+        return 'string'
 
-# Iterate through rows and create XML structure
+# Create the root element
+root = Element('root')
+
+# Iterate through each row and add to root
 for index, row in df.iterrows():
     object_element = create_xml_element(row)
     root.append(object_element)
@@ -78,6 +54,20 @@ tree.write('output.xml', encoding='utf-8', xml_declaration=True)
 print("XML file created successfully!")
 ```
 
-This script assumes that each row in your Excel file represents an object, and each column represents a property. Adjustments may be needed based on your specific requirements and the XML structure you are generating.
+### Example Data in Excel (`portfolio_data.xlsx`)
 
-Feel free to ask if you have any further questions or need specific modifications!
+Here is an example of how your Excel file might look, considering the columns discussed earlier:
+
+| Stamp | Type | Object ID | Branch ID | Name | Description | Version | Value | Value Type | Data Source | Model Name | Data Model | Additional Indices | Clustered | Unique | Fields | Distribution Style | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Portfolio Result Alias | Hierarchy | Root Node |
+|-------|------|-----------|-----------|------|-------------|---------|-------|------------|-------------|------------|------------|--------------------|-----------|--------|--------|--------------------|---------|------------|---------------|-------------|-------------------|------|--------------|----------------|----------------|------------------|------------------|--------------------|----------------|----------|----------|
+| abc123| Portfolio | id123 | branch1 | AD | Analysis of deposits | 5.0 | value1 | string | source1 | model1 | data_model1 | index1 | False | True | field1 | style1 | level1 | Level Name | default | True | False | 10 | lookup1 | type1 | tree1 | AND | rule1 | rule2 | alias1 | hierarchy1 | root1 |
+
+This script and the Excel file format should help you generate XML that matches the structure shown in image 1. Ensure you have the necessary columns in your Excel file and update the script if you need to handle more specific nested elements or structures.
+
+### Notes
+
+1. **XML Structure**: The script creates an XML file with nested properties, matching the hierarchical structure seen in your example.
+2. **Customization**: Adjust the script based on the exact structure and additional elements you need.
+3. **Value Type**: The script includes a simple function to determine the value type; customize it if more specific types are needed.
+
+Feel free to modify this script based on the specific XML structure and content you need!
