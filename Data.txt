@@ -1,82 +1,83 @@
-import os
-import re
+Given your additional requirement, you should add the `stamp` and `type` columns as the first columns in your XLSX sheet. Here is the updated structure for your Excel sheet:
 
-# Path of the first file
-file1_path = "SourceHash_Report.txt"
+### Updated XLSX Sheet Layout
 
-# Path of the second file
-file2_path = "DestinationHash_Report.txt"
+| Stamp | Type | Object ID | Branch ID | Name | Description | Version | Value | Value Type | Data Source | Model Name | Data Model | Additional Indices | Clustered | Unique | Fields | Distribution Style | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Portfolio Result Alias | Hierarchy | Root Node |
+|-------|------|-----------|-----------|------|-------------|---------|-------|------------|-------------|------------|------------|--------------------|-----------|--------|--------|--------------------|---------|------------|---------------|-------------|-------------------|------|--------------|----------------|----------------|------------------|------------------|--------------------|----------------|----------|----------|
 
-# Output file path
-output_file_path = "Comparison_Result.txt"
+### Explanation of Columns:
 
-# Unwanted file path
-unwanted_file_path = "unwanted.txt"
+1. **Stamp**: The unique stamp for the object, typically representing a timestamp or unique identifier.
+2. **Type**: The type of the object, such as "Portfolio" or any other relevant type.
+3. **Object ID**: A unique identifier for the object.
+4. **Branch ID**: The identifier for the specific branch.
+5. **Name**: The name of the object or field.
+6. **Description**: A descriptive field explaining the object.
+7. **Version**: The version of the object.
+8. **Value**: The value of the property.
+9. **Value Type**: The type of the value, e.g., string, boolean.
+10. **Data Source**: The source of the data, often a URL or database reference.
+11. **Model Name**: The name of the model associated with the object.
+12. **Data Model**: Reference to the data model.
+13. **Additional Indices**: Any additional indices related to the object.
+14. **Clustered**: Indicates whether the index is clustered.
+15. **Unique**: Indicates whether the value or index must be unique.
+16. **Fields**: Specific fields associated with the object.
+17. **Distribution Style**: The style of data distribution.
+18. **Level ID**: The identifier for different levels.
+19. **Level Name**: The name of each level.
+20. **Default Value**: The default value for the property.
+21. **Allow Nulls**: Indicates if null values are allowed.
+22. **Allow Nulls Fixed**: Specifies if null values are fixed.
+23. **Size**: The size of the data or field.
+24. **Lookup Source**: The source for lookup values.
+25. **Condition Type**: The type of condition for data filtering.
+26. **Condition Tree**: A tree structure defining the condition logic.
+27. **Grouping Operator**: The operator used for grouping conditions.
+28. **Instance Key Rules**: Rules for instance keys.
+29. **Instance Selection Rule**: Rules for selecting instances.
+30. **Portfolio Result Alias**: An alias for portfolio results.
+31. **Hierarchy**: The hierarchical structure of the object.
+32. **Root Node**: The root node of the hierarchy.
 
-# Function to check if a file is unwanted
-def is_unwanted(filename):
-    unwanted_patterns = [
-        r'bkp',               # "bkp" anywhere in the filename
-        r'test',              # "test" anywhere in the filename
-        r'CH\d+',             # "CH" followed by any number of digits
-        r'\d',                # any single digit
-        r'\.',                # any period
-        r'/'                  # any forward slash
-    ]
-    for pattern in unwanted_patterns:
-        if re.search(pattern, filename, re.IGNORECASE):
-            return True
-    return False
+### Python Script Example
 
-# Read hashcodes and file names from the first file
-file1_hashes = {}
-with open(file1_path, "r") as file1, open(unwanted_file_path, "w") as unwanted_file:
-    for line in file1:
-        line_parts = line.strip().split()
-        if len(line_parts) < 2:
-            continue
-        filename, hashcode = line_parts[-2], line_parts[-1]
-        if is_unwanted(filename.strip()):
-            unwanted_file.write(filename + "\n")
-            continue
-        if filename.strip() == "EMPTY_FILE":
-            hashcode = "EMPTY_FILE_HASH"
-        file1_hashes[hashcode] = os.path.splitext(os.path.basename(filename))[0]
+You can use a Python script to read from this XLSX file and generate the corresponding XML. Here’s a simplified example of how you might do it:
 
-# Read hashcodes and file names from the second file
-file2_hashes = {}
-with open(file2_path, "r") as file2, open(unwanted_file_path, "a") as unwanted_file:
-    for line in file2:
-        line_parts = line.strip().split()
-        if len(line_parts) < 2:
-            continue
-        filename, hashcode = line_parts[-2], line_parts[-1]
-        if is_unwanted(filename.strip()):
-            unwanted_file.write(filename + "\n")
-            continue
-        if filename.strip() == "EMPTY_FILE":
-            hashcode = "EMPTY_FILE_HASH"
-        file2_hashes[hashcode] = os.path.splitext(os.path.basename(filename))[0]
+```python
+import pandas as pd
+from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 
-# Find the common hashcodes with same filename (excluding extension) and hashcode in both files
-common_hashes = set()
-for hashcode in file1_hashes.keys():
-    if hashcode in file2_hashes.keys() and file1_hashes[hashcode] == file2_hashes[hashcode]:
-        common_hashes.add(hashcode)
+# Load data from XLSX
+df = pd.read_excel('portfolio_data.xlsx')
 
-# Find the hashcodes unique to each file
-unique_to_file1 = set(file1_hashes.keys()).difference(common_hashes)
-unique_to_file2 = set(file2_hashes.keys()).difference(common_hashes)
+def create_xml_element(row):
+    object_element = Element('object')
+    object_element.set('stamp', str(row['Stamp']))
+    object_element.set('type', row['Type'])
+    
+    for col in df.columns:
+        if col not in ['Stamp', 'Type']:
+            property_element = SubElement(object_element, 'property')
+            property_element.set('name', col)
+            property_element.set('value', str(row[col]))
 
-# Write the results to output file
-with open(output_file_path, "w") as output_file:
-    for hashcode in file1_hashes.keys():
-        if hashcode not in common_hashes and hashcode not in unique_to_file2:
-            output_file.write(f"{file1_hashes[hashcode]}\n")
+    return object_element
 
-    for hashcode in file2_hashes.keys():
-        if hashcode not in common_hashes and hashcode not in unique_to_file1:
-            output_file.write(f"{file2_hashes[hashcode]}\n")
+root = Element('root')  # Create root element
 
-    for hashcode in common_hashes:
-        output_file.write(f"{file1_hashes[hashcode]}\n")
+# Iterate through rows and create XML structure
+for index, row in df.iterrows():
+    object_element = create_xml_element(row)
+    root.append(object_element)
+
+# Save XML to file
+tree = ElementTree(root)
+tree.write('output.xml', encoding='utf-8', xml_declaration=True)
+
+print("XML file created successfully!")
+```
+
+This script assumes that each row in your Excel file represents an object, and each column represents a property. Adjustments may be needed based on your specific requirements and the XML structure you are generating.
+
+Feel free to ask if you have any further questions or need specific modifications!
