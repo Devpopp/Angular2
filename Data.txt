@@ -1,74 +1,119 @@
-import pandas as pd
-from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
+Based on your latest images and the detailed structure of the XML you need to generate, here are steps and considerations for building a portfolio automation script that effectively reads from an Excel sheet and creates the required XML:
 
-# Load data from XLSX
-df = pd.read_excel('portfolio_data.xlsx')
+### Key Components and Structure Analysis
 
-# Function to create XML elements from DataFrame row
-def create_xml_element(row):
-    object_element = Element('object')
-    object_element.set('type', row['Type'])
-    object_element.set('version', str(row['Version']))
+1. **Hierarchical Data**: The XML structure in your images shows nested elements with multiple levels of depth, like `object`, `property`, and various `Portfolio` and `Condition` types.
 
-    # Adding properties
-    for col in df.columns:
-        if col not in ['Type', 'Version', 'Parent ID', 'Condition Type', 'Grouping Operator', 'Condition Value']:
-            if pd.isna(row[col]):
-                continue
-            property_element = SubElement(object_element, 'property')
-            property_element.set('name', col.replace(' ', ''))
-            property_element.set('value', str(row[col]))
-            property_element.set('valueType', determine_value_type(row[col]))
+2. **Dynamic Attributes**: Elements like `stamp`, `objectId`, and `branchId` are dynamically generated, so they need to be handled programmatically.
 
-    # Adding conditions
-    if 'Condition Type' in row and pd.notna(row['Condition Type']):
-        condition_element = SubElement(object_element, 'condition')
-        condition_element.set('type', row['Condition Type'])
-        condition_element.set('operator', row['Grouping Operator'])
-        condition_element.text = str(row['Condition Value'])
+3. **Multiple Nested Elements**: The XML includes nested elements like `Portfolio:level`, `Portfolio:additionalField`, and `DataModelCondition`. Each of these requires careful nesting based on the hierarchical structure.
 
-    return object_element
+4. **Complex Property Types**: Each `property` has a `name`, `value`, and `valueType`. Nested properties need to be correctly placed under their respective parent elements.
 
-# Function to determine value type (optional)
-def determine_value_type(value):
-    if isinstance(value, bool):
-        return 'boolean'
-    elif isinstance(value, int):
-        return 'integer'
-    elif isinstance(value, float):
-        return 'float'
-    else:
-        return 'string'
+### Steps to Build the Portfolio Automation Script
 
-# Create a mapping of parent-child relationships
-def build_hierarchy(df):
-    hierarchy = {}
-    for index, row in df.iterrows():
-        parent_id = row['Parent ID']
-        if parent_id not in hierarchy:
-            hierarchy[parent_id] = []
-        hierarchy[parent_id].append(row)
-    return hierarchy
+1. **Define Columns in Excel**:
+   Ensure your Excel file includes columns to capture all necessary data for each level of nesting and attributes. Here’s a suggested structure:
 
-# Recursively build XML structure
-def add_children(parent, hierarchy, parent_id):
-    if parent_id in hierarchy:
-        for row in hierarchy[parent_id]:
-            child_element = create_xml_element(row)
-            parent.append(child_element)
-            add_children(child_element, hierarchy, row['Name'])
+    | Stamp | Object ID | Type | Version | Parent ID | Name | Description | Include New Models in Execution | Non-Key Variables | Detail Set | Storage Type | Additional Indices | Clustered | Unique | Fields | Distribution Style | Portfolio Result Alias | Four Eyes Check | Validations | Producing Is Root | Sequence | Ignore Errors in Aggregated Condition Placement | Make As Of Date Column Nullable | Compute Statistics | Allow Multiple Nodes per Record | Execution Algorithm | Levels | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Actions | Models | Nested Elements |
+    |-------|-----------|------|---------|-----------|------|-------------|---------------------------------|-------------------|------------|--------------|--------------------|-----------|--------|--------|-------------------|-----------------------|----------------|-------------|----------------|---------|---------------------------------------------|---------------------------|-----------------|-------------------------|-------------------|-------|---------|------------|--------------|-----------|----------------|------|--------------|---------------|---------------|----------------|----------------|--------------------|-------|-------|----------------|
 
-# Create the root element
-root = Element('root')
+2. **Develop the Script**:
+   Write a Python script to read the data from the Excel sheet and create the XML. Here’s a detailed script to handle the nested structure:
 
-# Build the hierarchy from the DataFrame
-hierarchy = build_hierarchy(df)
+    ```python
+    import pandas as pd
+    from xml.etree.ElementTree import Element, SubElement, ElementTree, tostring
 
-# Add children to the root based on the hierarchy
-add_children(root, hierarchy, 'root')
+    # Load data from Excel
+    df = pd.read_excel('portfolio_data.xlsx')
 
-# Save XML to file
-tree = ElementTree(root)
-tree.write('output.xml', encoding='utf-8', xml_declaration=True)
+    # Function to determine value type
+    def determine_value_type(value):
+        if isinstance(value, bool):
+            return 'boolean'
+        elif isinstance(value, int):
+            return 'integer'
+        elif isinstance(value, float):
+            return 'float'
+        else:
+            return 'string'
 
-print("XML file with hierarchical conditions created successfully!")
+    # Function to create XML element from DataFrame row
+    def create_xml_element(row, parent):
+        object_element = SubElement(parent, 'object')
+        object_element.set('type', row['Type'])
+        object_element.set('version', str(row['Version']))
+        object_element.set('stamp', row['Stamp'])
+        object_element.set('objectId', row['Object ID'])
+
+        for col in df.columns:
+            if col not in ['Type', 'Version', 'Stamp', 'Object ID', 'Parent ID', 'Nested Elements']:
+                if pd.notna(row[col]):
+                    property_element = SubElement(object_element, 'property')
+                    property_element.set('name', col)
+                    property_element.set('value', str(row[col]))
+                    property_element.set('valueType', determine_value_type(row[col]))
+
+        # Handle nested elements
+        if pd.notna(row.get('Nested Elements')):
+            nested_elements = str(row['Nested Elements']).split(';')
+            for nested_element in nested_elements:
+                nested_parts = nested_element.strip().split('|')
+                if len(nested_parts) == 3:
+                    nested_obj = SubElement(object_element, 'object')
+                    nested_obj.set('type', nested_parts[0])
+                    nested_property = SubElement(nested_obj, 'property')
+                    nested_property.set('name', nested_parts[1])
+                    nested_property.set('value', nested_parts[2])
+                    nested_property.set('valueType', 'string')
+
+        return object_element
+
+    # Build hierarchy from DataFrame
+    def build_hierarchy(df):
+        hierarchy = {}
+        for index, row in df.iterrows():
+            parent_id = row['Parent ID']
+            if parent_id not in hierarchy:
+                hierarchy[parent_id] = []
+            hierarchy[parent_id].append(row)
+        return hierarchy
+
+    # Recursively add children to parent element
+    def add_children(parent, hierarchy, parent_id):
+        if parent_id in hierarchy:
+            for row in hierarchy[parent_id]:
+                child_element = create_xml_element(row, parent)
+                add_children(child_element, hierarchy, row['Object ID'])
+
+    # Create root element
+    root = Element('root')
+
+    # Build the hierarchy from the DataFrame
+    hierarchy = build_hierarchy(df)
+
+    # Add children to the root based on the hierarchy
+    add_children(root, hierarchy, 'root')
+
+    # Save XML to file
+    tree = ElementTree(root)
+    tree.write('output.xml', encoding='utf-8', xml_declaration=True)
+
+    print("XML file created successfully with nested elements and attributes!")
+    ```
+
+3. **Organize Excel Data**:
+   - Ensure each row in your Excel sheet represents an element in the XML.
+   - Use semicolons to separate multiple values within a cell for properties like `Fields` and `Additional Indices`.
+   - For nested elements, format the `Nested Elements` cell with details separated by vertical bars and semicolons.
+
+4. **Test and Validate**:
+   - Run the script with sample data to ensure it correctly generates the XML structure as required.
+   - Validate the generated XML against your expected structure and make adjustments as necessary.
+
+5. **Automation and Refinement**:
+   - Once the script is working, you can automate the process by scheduling it to run at required intervals or trigger it through a web interface.
+   - Continuously refine the script to handle any new requirements or changes in the XML structure.
+
+By following these steps and using the provided script, you should be able to create a robust portfolio automation script that generates XML files matching the detailed structure shown in your images. If you have any specific questions or need further customization, feel free to ask!
