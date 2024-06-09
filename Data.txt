@@ -1,13 +1,12 @@
-To create a dynamic script that can handle various hierarchical structures as seen in your examples, you need a flexible approach that can process nested elements and dynamic attributes effectively. The script should be able to read from an Excel file and generate XML that matches the complex nested structures without requiring a fixed set of rules for each type of hierarchy.
+To handle all types of hierarchies and ensure the script is flexible enough to handle complex XML structures dynamically, I’ll provide a comprehensive Python script along with detailed instructions and examples.
 
-### Python Script for Dynamic XML Generation
+### Comprehensive Python Script
 
-The following script is designed to handle various hierarchical levels dynamically. It reads the structure from the Excel file and creates XML accordingly:
+This script reads data from an Excel sheet and creates XML files considering various hierarchies and nested structures.
 
 ```python
 import pandas as pd
 from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
-import re
 
 # Load data from XLSX
 df = pd.read_excel('portfolio_data.xlsx')
@@ -25,16 +24,12 @@ def determine_value_type(value):
 
 # Function to create XML element from DataFrame row
 def create_xml_element(row):
-    # Clean column names to be used as attributes
-    row = {col.strip(): row[col] for col in row.index}
-    
-    # Initialize element
     object_element = Element('object')
-    for col in ['Type', 'Version', 'Stamp', 'Object ID']:
-        if pd.notna(row.get(col)):
-            object_element.set(col.lower().replace(' ', ''), str(row[col]))
-    
-    # Add properties
+    object_element.set('type', row.get('Type', 'UnknownType'))
+    object_element.set('version', str(row.get('Version', '1.0')))
+    object_element.set('stamp', str(row.get('Stamp', 'UnknownStamp')))
+    object_element.set('objectId', str(row.get('Object ID', 'UnknownID')))
+
     for col in df.columns:
         if col not in ['Type', 'Version', 'Stamp', 'Object ID', 'Parent ID', 'Nested Elements']:
             if pd.notna(row[col]):
@@ -43,7 +38,7 @@ def create_xml_element(row):
                 property_element.set('value', str(row[col]))
                 property_element.set('valueType', determine_value_type(row[col]))
 
-    # Add nested elements
+    # Handle nested elements
     if pd.notna(row.get('Nested Elements')):
         nested_elements = str(row['Nested Elements']).split(';')
         for nested_element in nested_elements:
@@ -76,7 +71,7 @@ def add_children(parent, hierarchy, parent_id):
             parent.append(child_element)
             add_children(child_element, hierarchy, row['Object ID'])
 
-# Main script logic
+# Main function to generate XML
 def generate_xml(df):
     hierarchy = build_hierarchy(df)
     root_elements = []
@@ -85,6 +80,7 @@ def generate_xml(df):
     with open('output.xml', 'wb') as file:
         for element in root_elements:
             file.write(tostring(element, encoding='utf-8'))
+            file.write(b'\n')  # Add a newline for readability
 
     print("XML file created successfully!")
 
@@ -92,29 +88,54 @@ def generate_xml(df):
 generate_xml(df)
 ```
 
-### Key Features of the Script
+### How to Prepare Your Excel File
 
-1. **Dynamic Handling of Columns**:
-   - The script reads all columns dynamically and sets them as attributes or nested properties based on the data in each row.
+The Excel file (`portfolio_data.xlsx`) should be structured to capture different hierarchical and nested structures. Here’s an example layout:
 
-2. **Recursive Structure Building**:
-   - It uses a recursive function `add_children` to handle nested hierarchies dynamically, allowing for flexible XML generation based on the input data.
+#### Example 1: Simple Hierarchical Structure
 
-3. **Flexible Nested Elements**:
-   - The `Nested Elements` column is used to specify nested objects, allowing complex hierarchies to be captured in a simple format in the Excel sheet.
+| Stamp | Object ID | Type | Version | Parent ID | Name | Description | Nested Elements |
+|-------|-----------|------|---------|-----------|------|-------------|----------------|
+| eee2c2b4 | obj1 | Portfolio | 5.0 | root | AD | Analysis of deposits | ModelBasedObject|modelEntry|dataModel; DataModel|Portfolio[BT].ModifyModel[position].reportDataDictionary |
+| eee2c2b5 | obj2 | Portfolio:level | 1.0 | obj1 | Level 1 | Counterparty Industry | |
+| eee2c2b6 | obj3 | Portfolio:level | 1.0 | obj1 | Level 2 | Counterparty Sub-type | |
+| eee2c2b7 | obj4 | Portfolio:additionalField | 2.0 | obj2 | Line Item | Line item description | |
 
-4. **Generic and Reusable**:
-   - This script can handle any hierarchical structure as long as it is properly defined in the Excel file, making it highly reusable for different types of data.
+#### Example 2: Complex Nested Structure
 
-### How to Structure Your Excel File
+| Stamp | Object ID | Type | Version | Parent ID | Name | Description | Nested Elements |
+|-------|-----------|------|---------|-----------|------|-------------|----------------|
+| eee2c2b8 | obj5 | Condition:list | 1.0 | root | List | List description | Portfolio|AdditionalInfo|Details; Condition|Summary|SummaryDetails |
+| eee2c2b9 | obj6 | Portfolio:localAdditionalFieldReference | 1.0 | obj5 | Field Ref | Field reference description | Portfolio|FieldDetails|MoreDetails |
+| eee2c2ba | obj7 | Portfolio:index | 1.0 | obj6 | Index | Index details | |
+| eee2c2bb | obj8 | Portfolio:distributionStyle | 1.0 | obj6 | Dist Style | Distribution details | |
 
-Your Excel file should follow a structure that can include all relevant data for the XML generation:
+#### Example 3: Deeply Nested Hierarchy
 
-| Stamp | Object ID | Type | Version | Parent ID | Name | Description | Include New Models in Execution | Non-Key Variables | Detail Set | Storage Type | Additional Indices | Clustered | Unique | Fields | Distribution Style | Portfolio Result Alias | Four Eyes Check | Validations | Producing Is Root | Sequence | Ignore Errors in Aggregated Condition Placement | Make As Of Date Column Nullable | Compute Statistics | Allow Multiple Nodes per Record | Execution Algorithm | Levels | Level ID | Level Name | Default Value | Allow Nulls | Allow Nulls Fixed | Size | Lookup Source | Condition Type | Condition Tree | Grouping Operator | Instance Key Rules | Instance Selection Rule | Actions | Models | Nested Elements |
-|-------|-----------|------|---------|-----------|------|-------------|---------------------------------|-------------------|------------|--------------|--------------------|-----------|--------|--------|-------------------|-----------------------|----------------|-------------|----------------|---------|---------------------------------------------|---------------------------|-----------------|-------------------------|-------------------|-------|---------|------------|--------------|-----------|----------------|------|--------------|---------------|---------------|----------------|----------------|--------------------|-------|-------|----------------|
-| eee2c2b4 | obj1 | Portfolio | 5.0 | root | AD | Analysis of deposits | True | var1, var2 | dataset1 | SEGMENTED | index1;index2 | False | True | field1;field2 | INHERIT | alias1 | True | validation1 | False | seq1 | True | True | FOR_ALL_COLUMNS | True | long_queries | Level1, Level2 | level1 | Section | default1 | True | False | 10 | lookup1 | type1 | tree1 | AND | rule1 | rule2 | action1 | model1 | Portfolio|dataModel|Portfolio[BT].ModifyModel[position].reportDataDictionary |
+| Stamp | Object ID | Type | Version | Parent ID | Name | Description | Nested Elements |
+|-------|-----------|------|---------|-----------|------|-------------|----------------|
+| eee2c2bc | obj9 | DataModelCondition | 1.0 | root | Condition | Condition details | Condition|SubCondition|SubConditionDetails; DataModel|Reference|DataModelDetails |
+| eee2c2bd | obj10 | Portfolio:resultAlias | 1.0 | obj9 | Alias | Alias details | Portfolio|ResultInfo|AliasInfo |
+| eee2c2be | obj11 | Portfolio:level | 1.0 | obj10 | Level 3 | Level details | |
 
-- **`Parent ID`**: Indicates the parent of the current row's object. Use 'root' for top-level objects.
-- **`Nested Elements`**: Specifies nested elements in the format `type|name|value`, separated by semicolons for multiple nested elements.
+### Running the Script
 
-By following this approach, you can dynamically generate XML files from a variety of hierarchical data structures specified in your Excel file, without needing to hardcode specific details for each hierarchy.
+1. **Install Required Packages**:
+   Make sure you have `pandas` installed:
+   ```bash
+   pip install pandas
+   ```
+
+2. **Prepare the Excel File**:
+   Save your Excel data as `portfolio_data.xlsx` in the same directory as your script.
+
+3. **Run the Script**:
+   Execute the script in your Python environment. It will generate an `output.xml` file that reflects the hierarchies and nested structures defined in your Excel file.
+
+### Key Features
+
+- **Flexible Hierarchy Handling**: The script can handle various types of nested and hierarchical structures dynamically, based on the data provided in the Excel sheet.
+- **Comprehensive Structure**: It reads all relevant columns and processes them into a hierarchical XML structure.
+- **Reusable and Adaptable**: The script is designed to be easily modified for different structures and data formats without extensive changes.
+
+By following these steps and using the provided script, you will be able to generate XML files that accurately reflect complex hierarchical data structures. Feel free to customize the script further if you have more specific requirements or different data formats!
