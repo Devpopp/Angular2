@@ -1,3 +1,6 @@
+I want to participate in the Women In Cloud program to deepen my understanding of cloud computing fundamentals, expand my professional skills, and network with other women in technology. This opportunity will help me contribute more effectively to my team and advance my career in a rapidly evolving field.
+
+
 import pandas as pd
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
