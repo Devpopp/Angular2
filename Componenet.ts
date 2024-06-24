@@ -1,127 +1,58 @@
-import os
-import datetime as dt
-import pandas as pd
-from shutil import make_archive as archive
+import { Injectable } from '@angular/core';
+import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { AuthService } from '../services/auth.service';
+import { AppService } from '../services/app.service';
+import { LogService } from '../services/log.service';
 
-# Set up paths
-timestamp = str(dt.datetime.now().strftime('%Y%m%d_%H%M_%S'))
-V_PATH = os.path.dirname(os.path.abspath(__file__)) + os.sep
-dataPath = V_PATH + 'data' + os.sep
-portfolioPath = V_PATH + 'portfolio' + os.sep
-excelPath = portfolioPath + 'excel' + os.sep
-xmlPath = portfolioPath + 'xml' + os.sep
-zipPath = portfolioPath + 'zip' + os.sep
-archivePath = portfolioPath + 'archive' + os.sep
+@Injectable()
+export class HttpInterceptorService implements HttpInterceptor {
+  constructor(
+    private httpBackend: HttpBackend,
+    private authService: AuthService,
+    private appService: AppService,
+    private logService: LogService
+  ) {
+    this.http = new HttpClient(httpBackend);
+  }
 
-# Load configuration
-config_df = pd.read_excel(dataPath + 'config_file.xlsx', sheet_name='config')
-V_EXCEL = config_df['DPM_excel'][0]
-MES_SH = config_df['MES_sheet'][0]
-owner = config_df['owner'][8]
-stamp = config_df['stamp'][0]
-branchId = config_df['branchId'][0]
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const token = this.authService.getToken();
 
-# Ensure necessary directories exist
-os.makedirs(excelPath, exist_ok=True)
-os.makedirs(xmlPath, exist_ok=True)
-os.makedirs(zipPath, exist_ok=True)
-os.makedirs(archivePath, exist_ok=True)
+    if (token) {
+      req = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+    }
 
-# Archive old XML files
-archive(archivePath + timestamp, 'zip', xmlPath)
+    return next.handle(req).pipe(
+      catchError(err => {
+        if (err.status === 401) {
+          this.logService.addData('User is not authenticated');
+          // Optionally, redirect to login page or handle re-authentication
+          return throwError(err);
+        }
 
-# Clean up old files
-if os.path.isfile(excelPath + 'portfolio.xlsx'):
-    os.remove(excelPath + 'portfolio.xlsx')
-for f in os.listdir(xmlPath):
-    os.remove(xmlPath + f)
-
-def create_portfolio():
-    """Create a zipped XML of portfolio data"""
-    df_orig = pd.read_excel(dataPath + V_EXCEL, sheet_name=MES_SH, header=0)
-    df_orig['Owner'] = owner
-    df_orig['Period type'] = 'instant'
-
-    # Filter and prepare data
-    df_orig = df_orig[df_orig['DomainCode'].isin(['AT'])]
-    data_col = ['Label', 'Code', 'Description', 'Owner', 'Data type', 'Period type', 'ParentCode']
-    df_data = df_orig[['MemberLabel', 'MemberCode', 'Description', 'Owner', 'DataType', 'Period type', 'ParentCode']].copy()
-    df_data.columns = data_col
-    df_data['Data type'] = df_data['Data type'].apply(lambda x: ''.join(x.split('[')[:1]))
-    df_data.fillna('', inplace=True)
-
-    # Save to Excel
-    with pd.ExcelWriter(excelPath + 'portfolio.xlsx', engine='openpyxl', mode='w') as writer:
-        df_data.to_excel(writer, sheet_name='Data', index=False)
-
-    print('Excel file for portfolio extract is created.')
-
-    # Generate XML files
-    Main_df = pd.read_excel(excelPath + 'portfolio.xlsx', sheet_name='Data')
-    for ind in Main_df.index:
-        create_xml_file(Main_df, ind)
-
-    print("XML files created for portfolio.")
-
-    # Archive XML files
-    archive(zipPath + 'portfolio', 'zip', xmlPath)
-    print('Ready-to-import zip file is created for portfolio XML files.')
-
-def create_xml_file(df, index):
-    with open(xmlPath + df['Code'][index] + '.xml', 'w') as fw:
-        fw.write('<object stamp="' + stamp + '" type="Portfolio" version="11">\n')
-        fw.write('<property name="name" value="' + df['Code'][index] + '" valueType="string"/>\n')
-        description = str(df['Description'][index]) if str(df['Description'][index]) != "nan" else str(df['Label'][index])
-        fw.write('<property name="description" value="' + description + '" valueType="string"/>\n')
-        fw.write('<property name="objectId" value="' + df['Code'][index] + '" valueType="string"/>\n')
-        fw.write('<property name="branchId" value="' + branchId + '" valueType="string"/>\n')
-        fw.write('<property name="comment" value="" valueType="string"/>\n')
-        fw.write('<property name="longName" value="' + str(df['Label'][index]) + '" valueType="string"/>\n')
-        fw.write('<property name="xbrlMeasureId" value="ebo_met:' + df['Code'][index] + '" valueType="string"/>\n')
-        fw.write('<property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
-        fw.write('<property name="measureType" value="' + ('ENUMERATOR' if str.lower(df['Data type'][index]) == "enumeration" else 'NATIVE') + '" valueType="string"/>\n')
-        if str.lower(df['Data type'][index]) in ["monetary", "enumeration"]:
-            fw.write('<property name="valueType" value="Monetary" valueType="string"/>\n')
-        fw.write('<property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
-        fw.write('<property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
-        fw.write('<property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
-        if str.lower(df['Data type'][index]) != "enumeration":
-            fw.write('<property name="displayFormat" value="#,###.00" valueType="string"/>\n')
-            fw.write('<property name="submissionFormat" value="0.0###" valueType="string"/>\n')
-        fw.write('<property name="periodType" value="' + ("DURATION" if df['Period type'][index] == "duration" else "INSTANT") + '" valueType="string"/>\n')
-        fw.write('<property name="alternateDisplayFormats" valueType="table"/>\n')
-        # Add hierarchical conditions
-        add_hierarchy(df, index, fw)
-        fw.write('</object>\n')
-
-def add_hierarchy(df, index, fw):
-    if 'ParentCode' in df.columns and pd.notna(df['ParentCode'][index]) and df['ParentCode'][index]:
-        parent_code = df['ParentCode'][index]
-        fw.write('<property name="parentCode" value="' + parent_code + '" valueType="string"/>\n')
-        child_df = df[df['ParentCode'] == parent_code]
-        for child_index in child_df.index:
-            fw.write('<object type="Measure">\n')
-            fw.write('<property name="name" value="' + child_df['Code'][child_index] + '" valueType="string"/>\n')
-            description = str(child_df['Description'][child_index]) if str(child_df['Description'][child_index]) != "nan" else str(child_df['Label'][child_index])
-            fw.write('<property name="description" value="' + description + '" valueType="string"/>\n')
-            fw.write('<property name="objectId" value="' + child_df['Code'][child_index] + '" valueType="string"/>\n')
-            fw.write('<property name="branchId" value="' + branchId + '" valueType="string"/>\n')
-            fw.write('<property name="comment" value="" valueType="string"/>\n')
-            fw.write('<property name="longName" value="' + str(child_df['Label'][child_index]) + '" valueType="string"/>\n')
-            fw.write('<property name="xbrlMeasureId" value="ebo_met:' + child_df['Code'][child_index] + '" valueType="string"/>\n')
-            fw.write('<property name="xbrlMeasureNamespace" value="http://www.eba.europa.eu/xbrl/crr/dict/met" valueType="string"/>\n')
-            fw.write('<property name="measureType" value="' + ('ENUMERATOR' if str.lower(child_df['Data type'][child_index]) == "enumeration" else 'NATIVE') + '" valueType="string"/>\n')
-            if str.lower(child_df['Data type'][child_index]) in ["monetary", "enumeration"]:
-                fw.write('<property name="valueType" value="Monetary" valueType="string"/>\n')
-            fw.write('<property name="useFallbackValueInXBRLInstance" value="false" valueType="boolean"/>\n')
-            fw.write('<property name="useFallbackValueInViewer" value="false" valueType="boolean"/>\n')
-            fw.write('<property name="useEmptyValueInViewer" value="true" valueType="boolean"/>\n')
-            if str.lower(child_df['Data type'][child_index]) != "enumeration":
-                fw.write('<property name="displayFormat" value="#,###.00" valueType="string"/>\n')
-                fw.write('<property name="submissionFormat" value="0.0###" valueType="string"/>\n')
-            fw.write('<property name="periodType" value="' + ("DURATION" if child_df['Period type'][child_index] == "duration" else "INSTANT") + '" valueType="string"/>\n')
-            fw.write('<property name="alternateDisplayFormats" valueType="table"/>\n')
-            fw.write('</object>\n')
-
-if __name__ == "__main__":
-    create_portfolio
+        // Validate the user's group before proceeding
+        return this.authService.validateFunctionalGroup().pipe(
+          switchMap(isAuthorized => {
+            if (isAuthorized) {
+              return next.handle(req);
+            } else {
+              this.logService.addData('User is not authorized');
+              return throwError({ status: 403, message: 'User is not authorized' });
+            }
+          }),
+          catchError(groupError => {
+            this.logService.addData(`Group validation error: ${groupError.message}`);
+            return throwError(groupError);
+          })
+        );
+      })
+    );
+  }
+}
