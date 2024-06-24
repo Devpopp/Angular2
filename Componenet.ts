@@ -1,57 +1,34 @@
 import { Injectable } from '@angular/core';
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpBackend, HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
-import { AppService } from '../services/app.service';
-import { LogService } from '../services/log.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { map, catchError } from 'rxjs/operators';
 
-@Injectable()
-export class HttpInterceptorService implements HttpInterceptor {
-  constructor(
-    private httpBackend: HttpBackend,
-    private authService: AuthService,
-    private appService: AppService,
-    private logService: LogService
-  ) {
-    this.http = new HttpClient(httpBackend);
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private baseUrl = environment.baseUrl;
+
+  constructor(private http: HttpClient) {}
+
+  getToken() {
+    return localStorage.getItem('bamToken');
   }
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = this.authService.getToken();
-
-    if (token) {
-      req = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        },
-        withCredentials: true
-      });
+  validateFunctionalGroup(): Observable<boolean> {
+    const token = this.getToken();
+    if (!token) {
+      console.log('No token found. User is not authorized.');
+      return of(false);
     }
 
-    return next.handle(req).pipe(
-      catchError(err => {
-        if (err.status === 401) {
-          this.logService.addData('User is not authenticated');
-          // Optionally, redirect to login page or handle re-authentication
-          return throwError(err);
-        }
-
-        // Validate the user's group before proceeding
-        return this.authService.validateFunctionalGroup().pipe(
-          switchMap(isAuthorized => {
-            if (isAuthorized) {
-              return next.handle(req);
-            } else {
-              this.logService.addData('User is not authorized');
-              return throwError({ status: 403, message: 'User is not authorized' });
-            }
-          }),
-          catchError(groupError => {
-            this.logService.addData(`Group validation error: ${groupError.message}`);
-            return throwError(groupError);
-          })
-        );
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get(`${this.baseUrl}/api/validate-group`, { headers }).pipe(
+      map((response: any) => response.isAuthorized),
+      catchError(error => {
+        console.error('Validation error:', error);
+        return of(false);
       })
     );
   }
