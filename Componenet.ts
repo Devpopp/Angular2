@@ -1,3 +1,54 @@
+from flask import Flask, request, jsonify
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+
+app = Flask(__name__)
+app.config['JWT_SECRET_KEY'] = 'f42b8cc471e58b22f3e0ad07f9f9f8df'
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+jwt = JWTManager(app)
+
+# Dummy user data for testing
+users = {
+    "user1": {
+        "username": "user1",
+        "first_name": "User",
+        "brid": "1234",
+        "groups": ["group1", "FGLBGFTCODR"]
+    }
+}
+
+required_functional_group = "FGLBGFTCODR"  # This is the required functional group
+
+def fetch_fn_grps(user_groups):
+    fmt_ad_groups_set = set(user_groups)
+    return fmt_ad_groups_set
+
+@app.route('/api/validate_group', methods=['GET'])
+@jwt_required()
+def validate_group():
+  username = request.args.get('username')
+  if not username:
+      return jsonify({"msg": "Username is required"}), 400
+
+  user = users.get(username)
+  if not user:
+      return jsonify({"msg": "User not found"}), 404
+
+  user_groups = user.get('groups', [])
+  functional_groups = fetch_fn_grps(user_groups)
+  
+  if required_functional_group not in functional_groups:
+      return jsonify({"msg": "Unauthorized"}), 401
+  
+  response = {
+      "access_token": jwt.encode({"username": user["username"]}, app.config['JWT_SECRET_KEY'], algorithm="HS256"),
+      "brid": user["brid"],
+      "first_name": user["first_name"],
+      "message": "User is found and authorized"
+  }
+  return jsonify(response), 200
+
+if __name__ == '__main__':
+    app.run(debug=True)
 To diagnose and resolve the issues with the validation logic, we need to ensure the backend routes are properly defined and accessible, and the Angular frontend is making correct HTTP requests. Let's review the provided code and fix the issues step by step.
 
 ### Flask Backend Review and Correction
