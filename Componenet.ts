@@ -1,3 +1,76 @@
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# Dummy user data for testing
+users = {
+    "user1": {
+        "username": "user1",
+        "first_name": "User",
+        "brid": "1234",
+        "groups": ["group1", "required_group"]
+    }
+}
+
+required_functional_group = "required_group"
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    print("Login request received")
+    username = request.json.get('username')
+    print(f"Username received: {username}")
+    
+    if username in users:
+        user = users[username]
+        user_groups = user['groups']
+        print(f"User found: {user}")
+        print(f"User groups: {user_groups}")
+        
+        if required_functional_group in user_groups:
+            access_token = "fake_access_token"  # Mock access token creation
+            print("User authorized")
+            return jsonify({
+                "message": "User is found and authorized",
+                "access_token": access_token,
+                "brid": user['brid'],
+                "first_name": user['first_name']
+            })
+        else:
+            print("User not in required functional group")
+            return jsonify({"message": "User not authorized for this functional group"}), 403
+    else:
+        print("User not found")
+        return jsonify({"message": "User not found"}), 404
+
+@app.route('/api/portfolio_leadinfo', methods=['POST'])
+def portfolio_leadinfo():
+    data = request.json
+    print(f"Portfolio lead info received: {data}")
+    # Your processing logic here
+    return jsonify({"message": "Portfolio Lead Info received"})
+
+@app.route('/api/validate_group', methods=['GET'])
+def validate_group():
+    current_user = "user1"  # Mock current user retrieval
+    print(f"Current user: {current_user}")
+    
+    if current_user in users:
+        user = users[current_user]
+        user_groups = user['groups']
+        print(f"User groups: {user_groups}")
+        
+        if required_functional_group in user_groups:
+            print("User authorized")
+            return jsonify({"message": "User is authorized", "first_name": user['first_name'], "brid": user['brid']})
+        else:
+            print("User not in required functional group")
+            return jsonify({'message': 'User is not authorized'}), 403
+    else:
+        print("User not found")
+        return jsonify({'message': 'User not found'}), 404
+
+if __name__ == '__main__':
+    app.run(debug=True)
 To handle authentication and authorization purely based on BAM without any manual input of username and password, you can modify the process to automatically validate the user based on the BAM token and functional group when they access any part of your application. Here's how you can set it up:
 
 ### Step-by-Step Guide
