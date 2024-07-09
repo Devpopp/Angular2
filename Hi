@@ -1,0 +1,183 @@
+To properly implement the functional group checking in your Flask backend and ensure that users are authenticated only if they belong to the required functional group, you need to enhance the logic in both the Flask application and the Angular service. Here’s a detailed solution to achieve this.
+
+### Backend (Flask)
+
+1. **Install Required Packages**
+
+   ```bash
+   pip install Flask-JWT-Extended Flask-CORS
+   ```
+
+2. **Update Flask App**
+
+   Here’s how you can set up your Flask app to check if the user belongs to the required functional group before authenticating them:
+
+   ```python
+   from flask import Flask, request, jsonify, session
+   from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+   from flask_cors import CORS
+
+   app = Flask(__name__)
+   app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+   jwt = JWTManager(app)
+   CORS(app)
+
+   # Sample user data structure
+   users = {
+       'user1': {'brid': 'BRID123', 'first_name': 'John', 'groups': ['group1', 'group2']},
+       'user2': {'brid': 'BRID456', 'first_name': 'Jane', 'groups': ['group2', 'group3']}
+   }
+
+   required_functional_group = 'group1'  # This is the required functional group for access
+
+   def fetch_fn_grps(user_groups):
+       fmt_ad_groups_set = set()
+       for ad_grp in user_groups:
+           ad_grp_lower = ad_grp.lower()
+           if ad_grp_lower.startswith("fglbgftcodr"):
+               fmt_ad_grp = ad_grp_lower.replace("@client.barclayscorp.com", "").replace("@intranet.barcapint.com", "")
+               fmt_ad_groups_set.add(fmt_ad_grp)
+       return fmt_ad_groups_set
+
+   def set_user_appln_names(user_groups):
+       relevant_apps = []
+       func_app_lst = {"group1": "app1", "group2": "app2", "group3": "app3"}
+       for grp_id in func_app_lst:
+           grp = grp_id.lower()
+           if grp in user_groups:
+               relevant_apps.append(func_app_lst[grp_id])
+       if relevant_apps:
+           session['appln_name'] = relevant_apps
+           return True
+       return False
+
+   @app.route('/api/login', methods=['POST'])
+   def login():
+       username = request.json.get('username')
+       if username in users:
+           user = users[username]
+           user_groups = user['groups']
+           if required_functional_group in user_groups:
+               access_token = create_access_token(identity=username)
+               return jsonify(access_token=access_token, brid=user['brid'], first_name=user['first_name'])
+           return jsonify({'message': 'User not authorized for this functional group'}), 403
+       return jsonify({'message': 'User not found'}), 401
+
+   @app.route('/api/validate-group', methods=['GET'])
+   @jwt_required()
+   def validate_group():
+       current_user = get_jwt_identity()
+       user = users.get(current_user)
+       if user:
+           user_groups = user['groups']
+           if required_functional_group in user_groups:
+               if set_user_appln_names(user_groups):
+                   return jsonify({'isAuthorized': True, 'first_name': user['first_name'], 'brid': user['brid']})
+       return jsonify({'message': 'User is not authorized'}), 403
+
+   if __name__ == '__main__':
+       app.run(debug=True)
+   ```
+
+### Frontend (Angular)
+
+1. **Auth Service**
+
+   Create a service to handle authentication and check the user’s group.
+
+   ```typescript
+   import { Injectable } from '@angular/core';
+   import { HttpClient, HttpHeaders } from '@angular/common/http';
+   import { Observable, of } from 'rxjs';
+   import { map, catchError } from 'rxjs/operators';
+
+   @Injectable({
+     providedIn: 'root'
+   })
+   export class AuthService {
+     baseUrl = 'http://127.0.0.1:5000/api'; // Change to your Flask API base URL
+
+     constructor(private http: HttpClient) { }
+
+     login(username: string): Observable<any> {
+       return this.http.post(`${this.baseUrl}/login`, { username }).pipe(
+         map((response: any) => {
+           if (response.access_token) {
+             localStorage.setItem('token', response.access_token);
+             localStorage.setItem('brid', response.brid);
+             localStorage.setItem('first_name', response.first_name);
+           }
+           return response;
+         }),
+         catchError(error => {
+           console.error('Login error:', error);
+           return of(null);
+         })
+       );
+     }
+
+     validateFunctionalGroup(): Observable<boolean> {
+       const token = localStorage.getItem('token');
+       if (!token) {
+         console.log('No token found. User is not authorized.');
+         return of(false);
+       }
+
+       const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+       return this.http.get(`${this.baseUrl}/validate-group`, { headers }).pipe(
+         map((response: any) => response.isAuthorized),
+         catchError(error => {
+           console.error('Validation error:', error);
+           return of(false);
+         })
+       );
+     }
+
+     getUserDetails() {
+       return {
+         brid: localStorage.getItem('brid'),
+         first_name: localStorage.getItem('first_name')
+       };
+     }
+   }
+   ```
+
+2. **Dashboard Component**
+
+   Display the user details and validate the functional group on initialization.
+
+   ```typescript
+   import { Component, OnInit } from '@angular/core';
+   import { AuthService } from './auth.service';
+
+   @Component({
+     selector: 'app-dashboard',
+     templateUrl: './dashboard.component.html'
+   })
+   export class DashboardComponent implements OnInit {
+     firstName: string;
+     brid: string;
+
+     constructor(private authService: AuthService) { }
+
+     ngOnInit() {
+       const userDetails = this.authService.getUserDetails();
+       this.firstName = userDetails.first_name;
+       this.brid = userDetails.brid;
+
+       this.authService.validateFunctionalGroup().subscribe(isAuthorized => {
+         if (!isAuthorized) {
+           // Handle unauthorized access
+           console.log('User is not authorized');
+           // You might want to redirect the user to a login page or show an unauthorized message
+         }
+       });
+     }
+   }
+   ```
+
+### Conclusion
+
+This solution integrates BAM for authentication with Flask as the backend and Angular as the frontend. The backend verifies the user's functional group during login and validates it for subsequent requests using JWT tokens. The frontend Angular service handles token storage and checks for user authorization across all pages.
+
+Make sure to adjust the `required_functional_group` variable and the user data according to your actual functional group requirements and user data structure.
