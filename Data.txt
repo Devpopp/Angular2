@@ -1,103 +1,62 @@
-I want to participate in the Women In Cloud program to deepen my understanding of cloud computing fundamentals, expand my professional skills, and network with other women in technology. This opportunity will help me contribute more effectively to my team and advance my career in a rapidly evolving field.
+from flask import Flask, request, jsonify, session
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 
+app = Flask(__name__)
+app.config['JWT_SECRET_KEY'] = 'f428bcc471e58b22fa3007d076750c22f634eee125ddddc8ac07ee9f9e683'
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+jwt = JWTManager(app)
 
-import pandas as pd
-from xml.etree.ElementTree import Element, SubElement, tostring
-from xml.dom import minidom
+required_functional_group = "FGLBGFTCODR"
 
-# Load data from XLSX
-df = pd.read_excel('portfolio_data.xlsx')
+def fetch_user_groups(username):
+    user = users.get(username)
+    if user:
+        return user['groups']
+    return None
 
-# Function to determine value type
-def determine_value_type(value):
-    if isinstance(value, bool):
-        return 'boolean'
-    elif isinstance(value, int):
-        return 'integer'
-    elif isinstance(value, float):
-        return 'float'
-    else:
-        return 'string'
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    if username in users:
+        user = users[username]
+        user_groups = fetch_user_groups(username)
+        if user_groups and required_functional_group in user_groups:
+            access_token = create_access_token(identity=username)
+            return jsonify({
+                "message": "User is found and authorized",
+                "access_token": access_token,
+                "brid": user['brid'],
+                "first_name": user['first_name']
+            })
+        else:
+            return jsonify({"message": "User not authorized for this functional group"}), 403
+    return jsonify({"message": "User not found"}), 404
 
-# Function to create XML element from DataFrame row
-def create_xml_element(row):
-    object_element = Element('object')
-    object_element.set('type', row.get('Type', 'UnknownType'))
-    object_element.set('version', str(row.get('Version', '1.0')))
-    object_element.set('stamp', str(row.get('Stamp', 'UnknownStamp')))
-    object_element.set('objectId', str(row.get('Object ID', 'UnknownID')))
+@app.route('/api/validate_group', methods=['GET'])
+@jwt_required()
+def validate_group():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({"msg": "Username is required"}), 400
+    user_groups = fetch_user_groups(username)
+    if not user_groups:
+        return jsonify({"msg": "User not found"}), 404
+    if required_functional_group not in user_groups:
+        return jsonify({"msg": "Unauthorized"}), 401
+    response = {
+        "access_token": jwt.encode({"username": username}, app.config["JWT_SECRET_KEY"], algorithm="HS256"),
+        "brid": users[username]["brid"],
+        "first_name": users[username]["first_name"],
+        "message": "User is found and authorized"
+    }
+    return jsonify(response), 200
 
-    for col in df.columns:
-        if col not in ['Type', 'Version', 'Stamp', 'Object ID', 'Parent ID', 'Node', 'Nested Elements', 'Conditions']:
-            if pd.notna(row[col]):
-                property_element = SubElement(object_element, 'property')
-                property_element.set('name', col)
-                property_element.set('value', str(row[col]))
-                property_element.set('valueType', determine_value_type(row[col]))
+@app.route('/api/users_in_group', methods=['GET'])
+def users_in_group():
+    group = request.args.get('group')
+    users_in_group = [user for user in users.values() if group in user['groups']]
+    return jsonify(users_in_group)
 
-    if pd.notna(row.get('Nested Elements')):
-        nested_elements = str(row['Nested Elements']).split(';')
-        for nested_element in nested_elements:
-            nested_parts = nested_element.strip().split('|')
-            if len(nested_parts) == 3:
-                nested_obj = SubElement(object_element, 'object')
-                nested_obj.set('type', nested_parts[0])
-                nested_property = SubElement(nested_obj, 'property')
-                nested_property.set('name', nested_parts[1])
-                nested_property.set('value', nested_parts[2])
-                nested_property.set('valueType', 'string')
-
-    if pd.notna(row.get('Conditions')):
-        conditions = str(row['Conditions']).split(';')
-        for condition in conditions:
-            condition_parts = condition.strip().split('|')
-            if len(condition_parts) == 4:
-                condition_obj = SubElement(object_element, 'object')
-                condition_obj.set('type', condition_parts[0])
-                condition_property = SubElement(condition_obj, 'property')
-                condition_property.set('name', condition_parts[1])
-                condition_property.set('value', condition_parts[2])
-                condition_property.set('valueType', condition_parts[3])
-
-    return object_element
-
-# Function to build hierarchy from DataFrame
-def build_hierarchy(df):
-    hierarchy = {}
-    for index, row in df.iterrows():
-        parent_id = row['Parent ID']
-        if parent_id not in hierarchy:
-            hierarchy[parent_id] = []
-        hierarchy[parent_id].append(row)
-    return hierarchy
-
-# Function to recursively add children to parent element
-def add_children(parent, hierarchy, parent_id):
-    if parent_id in hierarchy:
-        for row in hierarchy[parent_id]:
-            child_element = create_xml_element(row)
-            parent.append(child_element)
-            add_children(child_element, hierarchy, row['Node'])
-
-# Function to pretty-print XML
-def pretty_print_element(element):
-    rough_string = tostring(element, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")
-
-# Main function to generate XML
-def generate_xml(df):
-    hierarchy = build_hierarchy(df)
-    root_elements = []
-    add_children(root_elements, hierarchy, 'root')
-
-    for element in root_elements:
-        pretty_xml_str = pretty_print_element(element)
-        with open('output.xml', 'w') as file:
-            file.write(pretty_xml_str)
-
-    print("XML file created successfully!")
-
-# Run the XML generation
-generate_xml(df)
-
+if __name__ == '__main__':
+    app.run(debug=True)
