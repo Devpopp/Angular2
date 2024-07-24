@@ -1,8 +1,4 @@
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from twilio.rest import Client
 
 # Function to generate a 6-digit OTP
 def generate_otp():
@@ -12,46 +8,6 @@ def generate_otp():
 def verify_otp(user_otp, actual_otp):
     return user_otp == actual_otp
 
-# Function to send OTP via email
-def send_otp_via_email(email, otp):
-    sender_email = "your_email@example.com"
-    sender_password = "your_password"
-    subject = "Your OTP Code"
-    body = f"Your OTP code is: {otp}"
-
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-
-    try:
-        server = smtplib.SMTP('smtp.example.com', 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        text = msg.as_string()
-        server.sendmail(sender_email, email, text)
-        server.quit()
-        print(f"OTP sent to {email}")
-    except Exception as e:
-        print(f"Failed to send OTP to {email}: {e}")
-
-# Function to send OTP via SMS using Twilio
-def send_otp_via_sms(mobile, otp):
-    account_sid = 'your_account_sid'
-    auth_token = 'your_auth_token'
-    twilio_phone_number = 'your_twilio_phone_number'
-    
-    client = Client(account_sid, auth_token)
-    
-    message = client.messages.create(
-        body=f"Your OTP code is: {otp}",
-        from_=twilio_phone_number,
-        to=mobile
-    )
-    
-    print(f"OTP sent to {mobile}")
-
 # Main function to simulate the OTP verification process
 def otp_verification(email, mobile):
     max_attempts = 3
@@ -60,9 +16,8 @@ def otp_verification(email, mobile):
     email_otp = generate_otp()
     mobile_otp = generate_otp()
     
-    # Send OTP to email and mobile
-    send_otp_via_email(email, email_otp)
-    send_otp_via_sms(mobile, mobile_otp)
+    print(f"Simulating sending OTP to {email}: {email_otp}")
+    print(f"Simulating sending OTP to {mobile}: {mobile_otp}")
     
     # Verify email OTP
     email_attempts = 0
@@ -95,13 +50,13 @@ def otp_verification(email, mobile):
 # Test scenarios
 def run_tests():
     print("Test Scenario #1")
-    otp_verification("shankar.sharma@barclays.com", "+9096123456")
+    otp_verification("shankar.sharma@barclays.com", "9096123456")
 
     print("Test Scenario #2")
-    otp_verification("shankar.sharma@barclays.com", "+9096123456")
+    otp_verification("shankar.sharma@barclays.com", "9096123456")
 
     print("Test Scenario #3")
-    otp_verification("shankar.sharma@barclays.com", "+9096123456")
+    otp_verification("shankar.sharma@barclays.com", "9096123456")
 
 # Run the tests
 run_tests()
