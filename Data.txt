@@ -1,62 +1,107 @@
-from flask import Flask, request, jsonify, session
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from twilio.rest import Client
 
-app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'f428bcc471e58b22fa3007d076750c22f634eee125ddddc8ac07ee9f9e683'
-app.config['JWT_TOKEN_LOCATION'] = ['headers']
-jwt = JWTManager(app)
+# Function to generate a 6-digit OTP
+def generate_otp():
+    return random.randint(100000, 999999)
 
-required_functional_group = "FGLBGFTCODR"
+# Function to verify OTP
+def verify_otp(user_otp, actual_otp):
+    return user_otp == actual_otp
 
-def fetch_user_groups(username):
-    user = users.get(username)
-    if user:
-        return user['groups']
-    return None
+# Function to send OTP via email
+def send_otp_via_email(email, otp):
+    sender_email = "your_email@example.com"
+    sender_password = "your_password"
+    subject = "Your OTP Code"
+    body = f"Your OTP code is: {otp}"
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username')
-    if username in users:
-        user = users[username]
-        user_groups = fetch_user_groups(username)
-        if user_groups and required_functional_group in user_groups:
-            access_token = create_access_token(identity=username)
-            return jsonify({
-                "message": "User is found and authorized",
-                "access_token": access_token,
-                "brid": user['brid'],
-                "first_name": user['first_name']
-            })
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP('smtp.example.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        text = msg.as_string()
+        server.sendmail(sender_email, email, text)
+        server.quit()
+        print(f"OTP sent to {email}")
+    except Exception as e:
+        print(f"Failed to send OTP to {email}: {e}")
+
+# Function to send OTP via SMS using Twilio
+def send_otp_via_sms(mobile, otp):
+    account_sid = 'your_account_sid'
+    auth_token = 'your_auth_token'
+    twilio_phone_number = 'your_twilio_phone_number'
+    
+    client = Client(account_sid, auth_token)
+    
+    message = client.messages.create(
+        body=f"Your OTP code is: {otp}",
+        from_=twilio_phone_number,
+        to=mobile
+    )
+    
+    print(f"OTP sent to {mobile}")
+
+# Main function to simulate the OTP verification process
+def otp_verification(email, mobile):
+    max_attempts = 3
+    
+    # Generate OTPs for email and mobile
+    email_otp = generate_otp()
+    mobile_otp = generate_otp()
+    
+    # Send OTP to email and mobile
+    send_otp_via_email(email, email_otp)
+    send_otp_via_sms(mobile, mobile_otp)
+    
+    # Verify email OTP
+    email_attempts = 0
+    while email_attempts < max_attempts:
+        entered_email_otp = int(input("Enter the email OTP received: "))
+        if verify_otp(entered_email_otp, email_otp):
+            print("Email OTP verification successful. Now verify Mobile OTP!")
+            break
         else:
-            return jsonify({"message": "User not authorized for this functional group"}), 403
-    return jsonify({"message": "User not found"}), 404
+            email_attempts += 1
+            print("Invalid email OTP. Please try again.")
+            if email_attempts == max_attempts:
+                print("You've exceeded the maximum number of attempts. Access denied.")
+                return
+    
+    # Verify mobile OTP
+    mobile_attempts = 0
+    while mobile_attempts < max_attempts:
+        entered_mobile_otp = int(input("Enter the mobile OTP received: "))
+        if verify_otp(entered_mobile_otp, mobile_otp):
+            print("Mobile OTP verification successful. Access granted!")
+            return
+        else:
+            mobile_attempts += 1
+            print("Invalid mobile OTP. Please try again.")
+            if mobile_attempts == max_attempts:
+                print("You've exceeded the maximum number of attempts. Access denied.")
+                return
 
-@app.route('/api/validate_group', methods=['GET'])
-@jwt_required()
-def validate_group():
-    username = request.args.get('username')
-    if not username:
-        return jsonify({"msg": "Username is required"}), 400
-    user_groups = fetch_user_groups(username)
-    if not user_groups:
-        return jsonify({"msg": "User not found"}), 404
-    if required_functional_group not in user_groups:
-        return jsonify({"msg": "Unauthorized"}), 401
-    response = {
-        "access_token": jwt.encode({"username": username}, app.config["JWT_SECRET_KEY"], algorithm="HS256"),
-        "brid": users[username]["brid"],
-        "first_name": users[username]["first_name"],
-        "message": "User is found and authorized"
-    }
-    return jsonify(response), 200
+# Test scenarios
+def run_tests():
+    print("Test Scenario #1")
+    otp_verification("shankar.sharma@barclays.com", "+9096123456")
 
-@app.route('/api/users_in_group', methods=['GET'])
-def users_in_group():
-    group = request.args.get('group')
-    users_in_group = [user for user in users.values() if group in user['groups']]
-    return jsonify(users_in_group)
+    print("Test Scenario #2")
+    otp_verification("shankar.sharma@barclays.com", "+9096123456")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    print("Test Scenario #3")
+    otp_verification("shankar.sharma@barclays.com", "+9096123456")
+
+# Run the tests
+run_tests()
