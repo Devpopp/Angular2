@@ -1,62 +1,42 @@
-import random
+import pandas as pd
+import re
 
-# Function to generate a 6-digit OTP
-def generate_otp():
-    return random.randint(100000, 999999)
+# Load the Excel file
+file_path = 'Python PS#2_data extraction.xlsx'
+df = pd.read_excel(file_path)
 
-# Function to verify OTP
-def verify_otp(user_otp, actual_otp):
-    return user_otp == actual_otp
+# Function to extract date from description
+def extract_date(description):
+    date_pattern = r'\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b'
+    match = re.search(date_pattern, description)
+    if match:
+        return pd.to_datetime(match.group(), dayfirst=True).strftime('%d-%b-%y')
+    return None
 
-# Main function to simulate the OTP verification process
-def otp_verification(email, mobile):
-    max_attempts = 3
-    
-    # Generate OTPs for email and mobile
-    email_otp = generate_otp()
-    mobile_otp = generate_otp()
-    
-    print(f"Simulating sending OTP to {email}: {email_otp}")
-    print(f"Simulating sending OTP to {mobile}: {mobile_otp}")
-    
-    # Verify email OTP
-    email_attempts = 0
-    while email_attempts < max_attempts:
-        entered_email_otp = int(input("Enter the email OTP received: "))
-        if verify_otp(entered_email_otp, email_otp):
-            print("Email OTP verification successful. Now verify Mobile OTP!")
-            break
-        else:
-            email_attempts += 1
-            print("Invalid email OTP. Please try again.")
-            if email_attempts == max_attempts:
-                print("You've exceeded the maximum number of attempts. Access denied.")
-                return
-    
-    # Verify mobile OTP
-    mobile_attempts = 0
-    while mobile_attempts < max_attempts:
-        entered_mobile_otp = int(input("Enter the mobile OTP received: "))
-        if verify_otp(entered_mobile_otp, mobile_otp):
-            print("Mobile OTP verification successful. Access granted!")
-            return
-        else:
-            mobile_attempts += 1
-            print("Invalid mobile OTP. Please try again.")
-            if mobile_attempts == max_attempts:
-                print("You've exceeded the maximum number of attempts. Access denied.")
-                return
+# Apply the function to the 'Description' column
+df['New Date'] = df['Description'].apply(extract_date)
 
-# Test scenarios
-def run_tests():
-    print("Test Scenario #1")
-    otp_verification("shankar.sharma@barclays.com", "9096123456")
+# Split the rows where 'Description' length is more than 50 characters
+def split_long_descriptions(row):
+    if len(row['Description']) > 50:
+        split_point = 50
+        first_part = row['Description'][:split_point]
+        second_part = row['Description'][split_point:]
+        new_row = row.copy()
+        new_row['Description'] = second_part
+        return [row, new_row]
+    return [row]
 
-    print("Test Scenario #2")
-    otp_verification("shankar.sharma@barclays.com", "9096123456")
+# Create a new DataFrame with the split rows
+split_rows = df.apply(split_long_descriptions, axis=1)
+df_expanded = pd.DataFrame([item for sublist in split_rows for item in sublist])
 
-    print("Test Scenario #3")
-    otp_verification("shankar.sharma@barclays.com", "9096123456")
+# Sorting by 'Date'
+df_expanded['Date'] = pd.to_datetime(df_expanded['Date'], dayfirst=True)
+df_sorted = df_expanded.sort_values(by='Date').reset_index(drop=True)
 
-# Run the tests
-run_tests()
+# Save to a new Excel file
+output_path = 'Processed_Python_PS#2_data_extraction.xlsx'
+df_sorted.to_excel(output_path, index=False)
+
+print(f"Processed data has been saved to {output_path}")
