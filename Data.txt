@@ -1,42 +1,148 @@
-import pandas as pd
-import re
+import requests
+import sys
+from static_variables import AXIOM_Static_Variables
+import axiom_start_task_env
+import common_functions
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
-# Load the Excel file
-file_path = 'Python PS#2_data extraction.xlsx'
-df = pd.read_excel(file_path)
+# Load static variables and decrypt batch password
+static_variables = common_functions.load_static_variables()
+static_variables.batchpass = common_functions.decrypt(static_variables.batchpass)
 
-# Function to extract date from description
-def extract_date(description):
-    date_pattern = r'\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b'
-    match = re.search(date_pattern, description)
-    if match:
-        return pd.to_datetime(match.group(), dayfirst=True).strftime('%d-%b-%y')
-    return None
+# Set up the URL for making requests
+url = 'https://' + axiom_start_task_env.HOSTDNSFULLNAME + ':' + axiom_start_task_env.PORT + '/cv/rest/'
+print(url)
 
-# Apply the function to the 'Description' column
-df['New Date'] = df['Description'].apply(extract_date)
+# Initialize variables to store project details
+pr_name = ''
+source_branch = ''
+target_branch = ''
+comments = ''
 
-# Split the rows where 'Description' length is more than 50 characters
-def split_long_descriptions(row):
-    if len(row['Description']) > 50:
-        split_point = 50
-        first_part = row['Description'][:split_point]
-        second_part = row['Description'][split_point:]
-        new_row = row.copy()
-        new_row['Description'] = second_part
-        return [row, new_row]
-    return [row]
+# Parse command-line arguments
+argv = sys.argv[1:]
 
-# Create a new DataFrame with the split rows
-split_rows = df.apply(split_long_descriptions, axis=1)
-df_expanded = pd.DataFrame([item for sublist in split_rows for item in sublist])
+# Extract values from command-line arguments
+for arg in argv:
+    if arg.startswith("projectName"):
+        var = arg.split('=')[1]
+        pr_name = var
+    if arg.startswith("source_branch"):
+        var = arg.split('=')[1]
+        source_branch = var
+    if arg.startswith("target_branch"):
+        var = arg.split('=')[1]
+        target_branch = var
+    if arg.startswith("comments"):
+        var = arg.split('=')[1]
+        comments = var
 
-# Sorting by 'Date'
-df_expanded['Date'] = pd.to_datetime(df_expanded['Date'], dayfirst=True)
-df_sorted = df_expanded.sort_values(by='Date').reset_index(drop=True)
+# Print extracted details for debugging
+print('Project Name = ', pr_name)
+print('Source Branch = ', source_branch)
+print('Target Branch = ', target_branch)
+print('Comments = ', comments)
 
-# Save to a new Excel file
-output_path = 'Processed_Python_PS#2_data_extraction.xlsx'
-df_sorted.to_excel(output_path, index=False)
+# Split the project name string to extract relevant parts
+pr_string = pr_name.split('|')
+pr_details = pr_string[0]
+pr_dependency = pr_string[1].split(',')
+pr_dependency = [x for x in pr_dependency if x != '']
+pr_alias = pr_string[2].split(',')
+pr_alias = [x for x in pr_alias if x != '']
 
-print(f"Processed data has been saved to {output_path}")
+# Working with DateTime to get the current date and format it
+today = datetime.today()
+current_branch = today.strftime("%b%Y")
+print("Current Branch: ", current_branch)
+
+# Determining the previous quarter, previous month, and second previous month
+this_month = int(today.strftime("%m"))
+print("Current Month: ", this_month)
+
+if this_month in [1, 2, 3]:
+    prev_quarter = today - relativedelta(months=3)
+elif this_month in [4, 5, 6]:
+    prev_quarter = today - relativedelta(months=6)
+elif this_month in [7, 8, 9]:
+    prev_quarter = today - relativedelta(months=9)
+else:
+    prev_quarter = today - relativedelta(months=12)
+
+prev_quarter = prev_quarter.strftime("%b%Y")
+print("Previous Quarter: ", prev_quarter)
+
+previous_month = today - relativedelta(months=1)
+previous_month = previous_month.strftime("%b%Y")
+print("Previous Month: ", previous_month)
+
+previous_twomonths = today - relativedelta(months=2)
+previous_twomonths = previous_twomonths.strftime("%b%Y")
+print("Previous Two Months: ", previous_twomonths)
+
+# Get branch IDs for dependencies
+pr_bid = []
+for i in range(len(pr_dependency)):
+    if pr_dependency[i] == 'pr_CBI_STATS_REPORT':
+        if pr_alias[i] == 'UDFS':
+            updated_dependency = 'UDFS_CVD_CBI_Stats'
+        elif pr_alias[i] == 'Prior_Quarter':
+            updated_dependency = prev_quarter
+        elif pr_alias[i] == 'Prior_Month':
+            updated_dependency = previous_month
+        elif pr_alias[i] == 'Prior_TwoMonths':
+            updated_dependency = previous_twomonths
+        else:
+            updated_dependency = current_branch
+    else:
+        updated_dependency = pr_dependency[i]
+    
+    # Construct branch ID URL
+    branchid_url = url + 'branch/api/listOfType?objectType=DataSource&projectName=' + pr_dependency[i] + '&branchName=' + updated_dependency
+    response = requests.get(branchid_url, headers=static_variables.get_POST_AUTH_headers(), verify=False)
+    output = response.content.decode()
+    
+    # Extract the branch ID from the response content
+    start_index = output.find('"branchId"') + 17
+    end_index = output.find('"', start_index)
+    result = output[start_index:end_index]
+    pr_bid.append(result)
+
+# Print branch IDs for debugging
+print(pr_bid)
+
+# Create XML for the branch copy
+dxml = '''<objects>
+<copy_branch>
+    <object type="BranchCopySpec" version="0.0">
+        <property name="projectName" value="''' + pr_name + '''" valueType="string"/>
+        <property name="BranchName" value="''' + source_branch + '''" valueType="string"/>
+        <property name="NewBranchName" value="''' + target_branch + '''" valueType="string"/>
+        <property name="comments" value="New Branch For ''' + target_branch + ''' Created " valueType="string"/>
+        <property name="actions" valueType="table"/>
+    </object>
+</copy_branch>
+</objects>'''
+
+# Modify dependencies in XML for each project dependency
+for j in range(len(pr_dependency)):
+    a = '<property name="alias" value="' + pr_alias[j] + '" valueType="string"/>'
+    b = '<property name="url" value="url=Branch(' + pr_dependency[j] + '|' + updated_dependency + '|' + pr_bid[j] + ')" valueType="string"/>'
+    c = '<property name="BranchAlias" value="' + pr_alias[j] + '" valueType="string"/>'
+    dxml += a + b + c
+
+# Close the XML structure
+dxml += '</property></objects>'
+
+# Print XML data for debugging
+print(dxml)
+
+# Make POST request to copy branch
+response = requests.post(url + 'global/framework/objectManager.copyBranch', data=dxml, headers=static_variables.get_POST_AUTH_headers(), verify=False)
+print(response.content)
+
+# URL validation after branch copy
+url_validation = url + 'global/framework/branch.revalidateall?projectName=' + pr_name + '&branchName=' + target_branch + '&doNotDeleteInstancesByInstanceKeySoCorrection=true'
+response_validation = requests.get(url_validation, headers=static_variables.get_POST_AUTH_headers(), verify=False)
+print(response_validation.content)
