@@ -1,11 +1,131 @@
-Product_ID	Product_Name	Quantity	Bought_Price (in 1000K)	Sold_Price (in 1000K)
-1101	Headphones	50	15,000	25,000
-1102	Keyboard	30	20,000	35,000
-1103	Mouse	70	10,000	20,000
-1104	Monitor	20	100,000	150,000
-1105	USB Cable	100	2,000	5,000
-1106	Smartphone	40	300,000	450,000
-1107	Tablet	25	250,000	400,000
-1108	Laptop	15	700,000	1,000,000
-1109	Smartwatch	60	120,000	200,000
-1110	Bluetooth Speaker	80	30,000	50,000
+import requests
+import sys
+import logging
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def calculate_latest_quarter(today):
+    """Calculate the latest quarter based on the current date, formatted as 'Qx_YYYY'."""
+    quarter = (today.month - 1) // 3 + 1  # Determine the current quarter (1 to 4)
+    latest_quarter = f"Q{quarter}_{today.year}"  # Format as 'Qx_YYYY'
+    return latest_quarter
+
+def update_udf_system_default_dependency(pr_dependency, pr_alias, latest_quarter_per_project):
+    """
+    Update the dependency of UDF and SYSTEM_DEFAULT to the latest quarterly branch of the respective project.
+    """
+    if pr_dependency in latest_quarter_per_project and pr_alias in ['UDF', 'SYSTEM_DEFAULT']:
+        # Update the dependency to the latest quarterly branch of the respective project
+        updated_dependency = latest_quarter_per_project[pr_dependency]
+        logging.info(f"Updated {pr_dependency} dependency for {pr_alias} to {updated_dependency}")
+    else:
+        # Keep the original dependency if conditions are not met
+        updated_dependency = pr_dependency
+
+    return updated_dependency
+
+# Original code starts here
+# Retrieve command-line arguments
+pr_name = ''
+source_branch = ''
+target_branch = ''
+comments = ''
+argv = sys.argv[1:]
+
+for arg in argv:
+    if arg.startswith("-projectName"):
+        var = arg.split('=', 1)
+        pr_details = var[1]
+    elif arg.startswith("-source_branch"):
+        var = arg.split('=', 1)
+        source_branch = var[1]
+    elif arg.startswith("-target_branch"):
+        var = arg.split('=', 1)
+        target_branch = var[1]
+    elif arg.startswith("-comments"):
+        var = arg.split('=', 1)
+        comments = var[1]
+
+print("Project Name =>", pr_details)
+print("Branch Name =>", source_branch)
+print("New branch name =>", target_branch)
+print("Comments =>", comments)
+
+# Parse project details
+pr_string = pr_details.split('|')
+pr_name = pr_string[0]
+pr_dependency = pr_string[1].split(',')
+pr_dependency = [x for x in pr_dependency if x != '']
+pr_alias = pr_string[2].split(',')
+pr_alias = [x for x in pr_alias if x != '']
+print(pr_dependency)
+print(pr_alias)
+
+# --- Added Code for Quarterly Branch Handling ---
+# Calculate the latest quarterly branch for each project
+today = datetime.today()  # Get the current date
+latest_quarter = calculate_latest_quarter(today)  # Calculate the latest quarterly branch
+
+# Create a dictionary to hold the latest quarterly branch for each project
+latest_quarter_per_project = {
+    'AS': latest_quarter,
+    'FV': latest_quarter,
+    'MLAR': latest_quarter,
+    'RN': latest_quarter
+}
+
+# Update dependencies for UDF and SYSTEM_DEFAULT to the latest branches of AS, FV, MLAR, RN
+for i in range(len(pr_dependency)):
+    # Update the dependency for UDF and SYSTEM_DEFAULT
+    pr_dependency[i] = update_udf_system_default_dependency(pr_dependency[i], pr_alias[i], latest_quarter_per_project)
+
+# --- End of Added Code ---
+
+# Get branch ID for dependencies
+pr_bid = []
+for i in range(len(pr_dependency)):
+    branchid_url = url + '/branch/' + pr_dependency[i] + '/' + target_branch + '/framework/objectManager.listOfTypes?objectType=DataSource&projectName=' + pr_dependency[i]
+    response = requests.get(branchid_url, headers=static_variables.get_GET_AUTH_headers(), verify=False)
+    output = response.content.decode()
+    start_index = output.find("branchId") + 17
+    end_index = output.find('"', start_index)
+    result = output[start_index:end_index]
+    pr_bid.append(result)
+
+print(pr_bid)
+
+# Prepare XML for copying the branch
+dxml = '''
+<object type="BranchCopySpec" version="1.0">
+    <property name="projectName" value="''' + pr_name + '''" valueType="string"/>
+    <property name="branchName" value="''' + source_branch + '''" valueType="string"/>
+    <property name="newName" value="''' + target_branch + '''" valueType="string"/>
+    <property name="newDescription" value="New Branch For ''' + target_branch + ''' Reporting Created | ''' + comments + '''" valueType="string"/>
+    <property name="actions" valueType="table">
+'''
+
+# Add updated dependencies to the XML
+for j in range(len(pr_dependency)):
+    dxml += '''
+    <object type="BranchCopySpec:modifyDependency" version="1.0">
+        <property name="alias" value="''' + pr_alias[j] + '''" valueType="string"/>
+        <property name="uri" valueType="url">Branch/''' + pr_dependency[j] + '''/''' + target_branch + '''/''' + pr_bid[j] + '''</property>
+    </object>
+    '''
+
+dxml += '''
+    </property>
+</object>
+'''
+
+# Send the request to copy the branch
+response = requests.post(url + '/global/framework/objectManager.copyBranch', data=dxml, headers=static_variables.get_POST_AUTH_headers(), verify=False)
+print(response.content)
+
+# Validate the new branch
+url_validation = url + '/global/framework/branch.revalidateAll?projectName=' + pr_name + '&branchName=' + target_branch + '&doNotDeleteInstancesByInstanceKeysContainedInBranch=true'
+response_validation = requests.get(url_validation, headers=static_variables.get_GET_AUTH_headers(), verify=False)
+print(response_validation.content)
