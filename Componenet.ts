@@ -1,3 +1,38 @@
+For the “How Summary Comments,” consider these points for each section to reflect technical achievements concisely:
+
+	1.	Challenge:
+	•	Automated data workflows and batch processing scripts to improve execution efficiency, reducing processing time by over an hour.
+	2.	Drive:
+	•	Took proactive ownership of tasks by implementing fixes for batch processes during non-standard times, ensuring continuous system availability and reducing downtime.
+	3.	Empower:
+	•	Enabled other teams by sharing optimized processes and automating routine tasks, which helped streamline data handling and fostered collaboration across departments.
+	4.	Respect:
+	•	Incorporated feedback from technical and business stakeholders to ensure all changes met user requirements and system specifications.
+	5.	Integrity:
+	•	Maintained data accuracy through rigorous validation checks during reporting and batch processing, ensuring consistency across systems.
+	6.	Excellence:
+	•	Delivered significant improvements in batch execution time, optimizing storage usage, and enhancing system performance, aligning outcomes with business efficiency goals.
+	7.	Stewardship:
+	•	Focused on sustainable automation solutions that improved long-term system stability, such as dynamic portfolio creation and branch management automation.
+	8.	Listen and be Authentic:
+	•	Actively considered suggestions for system enhancements, refining automation scripts to improve accuracy and error handling.
+	9.	Energize and Inspire:
+	•	Set clear objectives for process optimization, achieving measurable gains in processing speed and resource utilization, motivating team members through tangible results.
+	10.	Align across the Enterprise:
+
+	•	Ensured that all optimization efforts supported organizational strategies, delivering benefits that extended beyond individual teams.
+
+	11.	Develop Others:
+
+	•	Shared knowledge gained from training and projects to upskill colleagues, promoting best practices in automation and process improvements.
+
+This version stays on point, emphasizing your technical contributions while aligning with the company’s values and behaviors.
+
+
+
+	
+
+
 Here’s a more technical version:
 
 How Summary Comments:
