@@ -1,3 +1,15 @@
+Here’s a refined version that includes your learning and growth:
+
+This year, I made significant technical contributions by optimizing batch processing, automating Unix file synchronization, and implementing hotfixes to ensure seamless system operations. I led server upgrades for Tomcat and AXIOM, streamlined data workflows, and migrated TCO applications to Angular, which enhanced system performance and user experience. I also improved reporting accuracy in MLAR, FV Movement, and CDS reports, while securing file management using SHA256 hashing.
+
+Through these projects, I learned a lot about advanced data processing, automation techniques, and system upgrades. The experience deepened my skills in Python, Angular, and DevOps practices, setting a strong foundation for even more complex technical challenges ahead.
+
+This version highlights your contributions while reflecting on your learning and growth.
+
+
+  
+
+
 Here’s a draft for overall closing comments on your performance and development opportunities:
 
 Overall Performance Summary:
