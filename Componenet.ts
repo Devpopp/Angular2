@@ -1,4 +1,9 @@
-Here’s a simplified yet technically appropriate version of the content:
+Here’s a more technical rewrite for the CDS Reporting section:
+
+	1.	CDS Reporting:
+	•	Performed a detailed analysis of the data architecture and flow within the CDS reporting framework.
+	•	Designed and implemented data flow logic for the FFR module, ensuring seamless integration across multiple report sheets.
+	•	Optimized data transformation and pipeline conditions to enhance processing efficiency and reduce latency.Here’s a simplified yet technically appropriate version of the content:
 
 	1.	OTC CDS Reporting: Contributed to reporting tasks for Over-The-Counter Credit Default Swaps.
 	2.	Unix Sync Utility: Developed an automated script for comparing and synchronizing files on Unix servers to ensure reliable and consistent file management.
