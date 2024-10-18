@@ -1,99 +1,23 @@
-# Initialize the list for storing branch IDs
-pr_bid = []
+Here’s a simplified yet technically appropriate version of the content:
 
-# Process monthly dependencies if they exist
-for i in range(len(pr_dependency)):
-    # Set the dependency update for monthly
-    updated_dependency = current_month_str
-    print(f'Processing monthly dependency: {pr_dependency[i]} with updated dependency: {updated_dependency}')
-    
-    # Fetch branch ID for the current monthly dependency
-    branchid_url = f"{url}/branch/{pr_dependency[i]}/{updated_dependency}/framework/objectManager.listOfTypes?objectType=DataSource"
-    response = requests.get(branchid_url, headers=static_variables.get_GET_AUTH_headers(), verify=static_variables.ROOT_CER_CA)
-    output = response.content.decode()
-    
-    # Extract the branch ID from the response
-    start_index = output.find('"branchId" value="') + 17
-    end_index = output.find('"', start_index)
-    if start_index == 16 or end_index == -1:
-        print(f"Branch ID not found for monthly dependency: {pr_dependency[i]}")
-        continue
-    result = output[start_index:end_index]
-    pr_bid.append(result)
-    print("Processed monthly pr_bid:", pr_bid)
+	1.	OTC CDS Reporting: Contributed to reporting tasks for Over-The-Counter Credit Default Swaps.
+	2.	Unix Sync Utility: Developed an automated script for comparing and synchronizing files on Unix servers to ensure reliable and consistent file management.
+	3.	Email Template Update: Modified the ESM email template to handle both feed and processed data.
+	4.	Batch Fixes: Analyzed and resolved issues preventing batch processes from running on weekends. Created queries to ensure batch processing continues smoothly.
+	5.	Data Loading and Environment Cleanup: Managed data loading processes and cleaned up the environment to optimize performance.
+	6.	Server and Tomcat Upgrades: Upgraded Tomcat servers to enhance system stability.
+	7.	Reporting Enhancement: Improved the MILAR reporting system.
+	8.	Migration to Angular: Led the migration of TCO applications from Python to Angular, focusing on language support and a better user experience, including the implementation of a new user interface.
+	9.	Training and Certifications: Completed Level 1 of FEP Program, covering the EVOLVE Python and Data Science Bootcamp. Acted as a batch holder for Digital Credentials in DevOps and AI.
+	10.	Batch Execution Optimization: Implemented changes to prevent unnecessary instance creation during batch execution. Made currency mapping and configuration adjustments in UAT.
+	11.	Flex Changes and Optimization:
+	•	Made changes to flex data processes by consolidating columns and improving data handling.
+	•	Updated configurations in AXIOM report aggregation, optimizing space and load time by removing unneeded columns.
+	•	Reduced pre-load time from 3:27:25 to 2:07:00, saving 1 hour 20 minutes.
+	•	Cut batch run time from 5:23:07 to 3:39:31, saving 1 hour 43 minutes, and reduced storage usage by 39.83 GB.
+	12.	Automation Enhancements:
+	•	Updated scripts for automatic quarterly branch management.
+	•	Automated processes for freezing branches and modifying compression logic in the development environment.
+	•	Developed automation for dynamic portfolio creation.
 
-# Process quarterly dependencies if it is a quarterly run and they exist
-if is_quarterly_run:
-    for i in range(len(additional_pr_dependency)):
-        # Set the dependency update for quarterly
-        updated_dependency = last_month_of_quarter_str
-        print(f'Processing quarterly dependency: {additional_pr_dependency[i]} with updated dependency: {updated_dependency}')
-        
-        # Fetch branch ID for the current quarterly dependency
-        branchid_url = f"{url}/branch/{additional_pr_dependency[i]}/{updated_dependency}/framework/objectManager.listOfTypes?objectType=DataSource"
-        response = requests.get(branchid_url, headers=static_variables.get_GET_AUTH_headers(), verify=static_variables.ROOT_CER_CA)
-        output = response.content.decode()
-        
-        # Extract the branch ID from the response
-        start_index = output.find('"branchId" value="') + 17
-        end_index = output.find('"', start_index)
-        if start_index == 16 or end_index == -1:
-            print(f"Branch ID not found for quarterly dependency: {additional_pr_dependency[i]}")
-            continue
-        result = output[start_index:end_index]
-        pr_bid.append(result)
-        print("Processed quarterly pr_bid:", pr_bid)
-
-# If no dependencies were processed, exit early
-if not pr_bid:
-    print("No dependencies processed. Exiting without creating the branch.")
-    exit()
-
-# Build the XML for the dependencies
-dxml = f'''
-<object type="BranchCopySpec" version="1.0">
-    <property name="projectName" value="{pr_name}" valueType="string"/>
-    <property name="branchName" value="{source_branch}" valueType="string"/>
-    <property name="newName" value="{target_branch}" valueType="string"/>
-    <property name="newDescription" value="New Branch for {target_branch} Reporting Created" valueType="string"/>
-    <property name="comment" value="{comments}" valueType="string"/>
-    <property name="actions" valueType="table"/>
-'''
-
-# Add each dependency to the XML
-for j in range(len(pr_bid)):
-    # Determine if the dependency is monthly or quarterly based on its position
-    if j < len(pr_dependency):
-        # Monthly dependency
-        a = f'<object type="BranchCopySpec:modifyDependency" version="1.0">'
-        b = f'<property name="alias" value="{pr_alias[j]}" valueType="string"/>'
-        c = f'<property name="url" valueType="url">Branch[{pr_dependency[j]}:{current_month_str}{{{pr_bid[j]}}}]</property>'
-    else:
-        # Quarterly dependency
-        idx = j - len(pr_dependency)
-        a = f'<object type="BranchCopySpec:modifyDependency" version="1.0">'
-        b = f'<property name="alias" value="{additional_pr_alias[idx]}" valueType="string"/>'
-        c = f'<property name="url" valueType="url">Branch[{additional_pr_dependency[idx]}:{last_month_of_quarter_str}{{{pr_bid[j]}}}]</property>'
-    
-    # Complete the XML for this dependency
-    d = '</object>'
-    e = a + '\n' + b + '\n' + c + '\n' + d + '\n'
-    dxml += e
-
-# Close the XML structure
-dxml += '''
-</property>
-</object>
-'''
-
-# Print the final XML for debugging
-print("Final dxml:\n", dxml)
-
-# Make the API call to create the branch
-response = requests.post(f"{url}/global/framework/objectManager.copyBranch", data=dxml, headers=static_variables.get_POST_AUTH_headers(), verify=static_variables.ROOT_CER_CA)
-print("API Response:", response.content.decode())
-
-# Perform validation
-url_validation = f"{url}/global/framework/branch.revalidateAll?projectName={pr_name}&branchName={target_branch}&doNotDeleteInstance=false"
-response_validation = requests.get(url_validation, headers=static_variables.get_GET_AUTH_headers(), verify=static_variables.ROOT_CER_CA)
-print("Validation Response:", response_validation.content.decode())
+This revision maintains the technical accuracy while presenting the information in a more straightforward manner.
