@@ -1,4 +1,14 @@
-Here’s a “How Summary Comments” draft based on the provided information:
+Here’s a rewritten version of point 15:
+
+	15.	Development Contributions in Reporting:
+
+	•	Contributed to MLAR Reporting, FV Movement Report, and CDS Report by optimizing batch execution for BT & PL mapping changes.
+	•	Implemented SAP currency updates in the UAT environment.
+	•	Identified and addressed issues with instances not being created in production, ensuring successful instance creation for the FV Movement Report in the development environment.
+		
+		Here’s a “How Summary Comments” draft based on the provided information:
+
+
 
 	1.	Challenge:
 	•	Streamlined data flow for CDS Reporting by optimizing data conditions, reducing potential bottlenecks, and improving processing efficiency.
